@@ -67,7 +67,9 @@ target_link_libraries(${YOUR_LIBRARY} PRIVATE
 ```
 
 
-```
-include <unitree_drivers/DriverUnitreeLocoClient.h>
+```cpp
+#include <unitree_drivers/DriverUnitreeLocoClient.h>
+#include <unitree_drivers/DriverUnitreeG1ArmSDK.h>
+#include <unitree_drivers/DriverUnitreeLowState.h>
 ```
 
