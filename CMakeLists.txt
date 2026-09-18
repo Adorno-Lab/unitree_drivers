@@ -66,8 +66,8 @@ if(NOT TARGET sas_core_pure)
     include(FetchContent)
     FetchContent_Declare(
         sas_core
-        GIT_REPOSITORY https://github.com/juanjqo/sas_core.git
-        GIT_TAG        jazzy_loopancho
+        GIT_REPOSITORY https://github.com/SmartArmStack/sas_core.git
+        GIT_TAG        jazzy
     )
     set(ROS2_BUILD OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(sas_core)
