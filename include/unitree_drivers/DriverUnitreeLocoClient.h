@@ -28,11 +28,6 @@
 #include <atomic>
 #include <memory>
 #include <vector>
-#include <dqrobotics/DQ.h>
-
-
-using namespace DQ_robotics;
-using namespace Eigen;
 
 /**
  * @brief Wraps the Unitree SDK's high-level LocoClient (unitree::robot::g1::LocoClient
@@ -122,6 +117,6 @@ public:
     void set_balance_mode(const int& balance_mode);
     void set_swing_height(const double& swing_height);
     void set_stand_height(const double& stand_height);
-    void set_speed_mode(int mode);
+    void set_speed_mode(const int& mode);
     void set_target_high_level_velocities(const std::array<double,3>& target_high_level_velocities);
 };

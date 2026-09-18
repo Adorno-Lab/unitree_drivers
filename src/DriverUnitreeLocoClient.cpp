@@ -477,7 +477,7 @@ void DriverUnitreeLocoClient::set_stand_height(const double& stand_height)
  *         future firmware/SDK release adds it, update this class accordingly rather
  *         than assuming it is universally available.
  */
-void DriverUnitreeLocoClient::set_speed_mode(int mode)
+void DriverUnitreeLocoClient::set_speed_mode(const int& mode)
 {
     switch (robot_type_) {
     case ROBOT::G1:

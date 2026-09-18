@@ -35,13 +35,15 @@ find_package(Eigen3 REQUIRED)
 # shared library with no discoverable Config.cmake. find_library() locates it and
 # gives us an absolute path we can embed in our exported target, which is more
 # portable than passing a bare "-ldqrobotics" link flag through to consumers.
-find_library(DQROBOTICS_LIBRARY dqrobotics)
-if(NOT DQROBOTICS_LIBRARY)
-    message(FATAL_ERROR
-        "libdqrobotics not found. Install DQ Robotics system-wide "
-        "(see https://dqrobotics.github.io) before configuring unitree_drivers."
-    )
-endif()
+
+# Not required at the moment.
+#find_library(DQROBOTICS_LIBRARY dqrobotics)
+#if(NOT DQROBOTICS_LIBRARY)
+#    message(FATAL_ERROR
+#        "libdqrobotics not found. Install DQ Robotics system-wide "
+#        "(see https://dqrobotics.github.io) before configuring unitree_drivers."
+#    )
+#endif()
 
 # sas_core, when built outside a ROS2/ament workspace (ROS2_BUILD=OFF), does not
 # install or export ANYTHING -- its install()/ament_export_targets() calls are
@@ -92,8 +94,8 @@ target_include_directories(loco_client PUBLIC
 target_link_libraries(loco_client
     PUBLIC
         unitree_sdk2
-        Eigen3::Eigen
-        ${DQROBOTICS_LIBRARY}
+        #Eigen3::Eigen
+        #${DQROBOTICS_LIBRARY}  //
     PRIVATE
         sas_core_pure
 )
@@ -105,33 +107,33 @@ set_target_properties(loco_client PROPERTIES
 )
 
 # ---------------------------------------------------------------------------
-# Library: arm_sdk (wraps DriverUnitreeG1ArmSDK)
+# Library: g1_arm_sdk (wraps DriverUnitreeG1ArmSDK)
 # ---------------------------------------------------------------------------
 # No dqrobotics/Eigen dependency: DriverUnitreeG1ArmSDK.h only pulls in <array>,
 # <atomic>, <memory>. unitree_sdk2 is used only in the .cpp, but is kept PUBLIC
 # here anyway since it's the shared vocabulary type of this whole package family
 # (consistent with loco_client) -- feel free to make it PRIVATE if that's not a
 # concern for your consumers. sas_core_pure is PRIVATE -- see the note above.
-add_library(arm_sdk SHARED
+add_library(g1_arm_sdk SHARED
     src/DriverUnitreeG1ArmSDK.cpp
 )
-add_library(unitree_drivers::arm_sdk ALIAS arm_sdk)
+add_library(unitree_drivers::g1_arm_sdk ALIAS g1_arm_sdk)
 
-target_compile_features(arm_sdk PUBLIC cxx_std_17)
+target_compile_features(g1_arm_sdk PUBLIC cxx_std_17)
 
-target_include_directories(arm_sdk PUBLIC
+target_include_directories(g1_arm_sdk PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_link_libraries(arm_sdk
+target_link_libraries(g1_arm_sdk
     PUBLIC
         unitree_sdk2
     PRIVATE
         sas_core_pure
 )
 
-set_target_properties(arm_sdk PROPERTIES
+set_target_properties(g1_arm_sdk PROPERTIES
     OUTPUT_NAME unitree_drivers_arm_sdk
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -177,7 +179,7 @@ install(DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(TARGETS loco_client arm_sdk low_state
+install(TARGETS loco_client g1_arm_sdk low_state
     EXPORT unitree_driversTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -213,6 +215,6 @@ install(FILES
 # find_package(unitree_drivers REQUIRED)
 # target_link_libraries(driver-g1 PRIVATE
 #     unitree_drivers::loco_client
-#     unitree_drivers::arm_sdk
+#     unitree_drivers::g1_arm_sdk
 #     unitree_drivers::low_state
 #)
