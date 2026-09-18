@@ -62,7 +62,7 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/opt
 find_package(unitree_drivers REQUIRED)
 target_link_libraries(${YOUR_LIBRARY} PRIVATE
      unitree_drivers::loco_client
-     unitree_drivers::arm_sdk
+     unitree_drivers::g1_arm_sdk
      unitree_drivers::low_state)
 ```
 
