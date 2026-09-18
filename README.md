@@ -49,11 +49,15 @@ cmake --build build -j$(nproc)
 cmake --install build
 ```
 
-Any project that later does `find_package(unitree_drivers)` needs to know where to look, since `$HOME/opt` isn't a default search path:
-
-```shell
-cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/opt
-```
+> [!TIP]
+> If you skipped exporting `CMAKE_PREFIX_PATH` (along with `LD_LIBRARY_PATH`,
+> `LIBRARY_PATH`, and `CPATH`) in `~/.bashrc` (see [this guide](https://ros2-tutorial.readthedocs.io/en/latest/cmake/cmake_packages_without_sudo.html)),
+> any project that later does `find_package(unitree_drivers)` needs to be told
+> where to look, since `$HOME/opt` isn't a default search path:
+>
+> ```shell
+> cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/opt
+> ```
 
 
 # Usage
