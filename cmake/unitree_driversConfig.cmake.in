@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Transitive PUBLIC dependencies that consumers linking against
+# unitree_drivers::loco_client / arm_sdk / low_state also need resolvable.
+# dqrobotics is intentionally NOT re-found here: it has no CMake package config
+# of its own (see the find_library() note in CMakeLists.txt), so its absolute
+# path is already baked directly into unitree_drivers::loco_client's exported
+# INTERFACE_LINK_LIBRARIES by install(EXPORT ...) -- nothing further to resolve.
+find_dependency(unitree_sdk2 REQUIRED)
+find_dependency(Eigen3 REQUIRED)
+
+include("${CMAKE_CURRENT_LIST_DIR}/unitree_driversTargets.cmake")
+
+check_required_components(unitree_drivers)
