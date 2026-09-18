@@ -54,3 +54,22 @@ Any project that later does `find_package(unitree_drivers)` needs to know where 
 ```shell
 cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/opt
 ```
+
+
+# Usage
+
+```cmake
+find_package(unitree_drivers REQUIRED)
+target_link_libraries(${YOUR_LIBRARY} PRIVATE
+     unitree_drivers::loco_client
+     unitree_drivers::arm_sdk
+     unitree_drivers::low_state)
+```
+
+
+```cpp
+#include <unitree_drivers/DriverUnitreeLocoClient.h>
+#include <unitree_drivers/DriverUnitreeG1ArmSDK.h>
+#include <unitree_drivers/DriverUnitreeLowState.h>
+```
+
