@@ -9,7 +9,7 @@ Robot-agnostic, pImpl-based C++ classes that wrap the Unitree SDK for locomotion
 > [!NOTE]
 > Non-sudo privileges? Create a custom prefix folder (e.g. `~/opt`) to hold `lib/` and `include/` without needing root. See [this guide](https://ros2-tutorial.readthedocs.io/en/latest/cmake/cmake_packages_without_sudo.html) for background.
 
-### Prerequisites
+## Prerequisites
 
 - [unitree_sdk2](https://github.com/unitreerobotics/unitree_sdk2) — build and install it first, following its own instructions.
 - Eigen3 — `sudo apt install libeigen3-dev`
@@ -19,8 +19,6 @@ If you're installing any of the above without sudo, install them to the same cus
 
 
 ## Sudo users
-
-### Build & Install
 
 ```shell
 # 1. Configure: choose Release, and (optionally) where to install it.
