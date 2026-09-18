@@ -124,9 +124,9 @@ public:
     };
     static constexpr int kWeightIndex = kNotUsedJoint;
 
-    std::atomic_bool* st_break_loops_; ///< Shared interruption flag, checked every tick in arm_control_loop_callback().
+    std::shared_ptr<sas::ShutdownSignaler> shutdown_signaler_; ///< Shared shutdown coordinator, polled every tick in arm_control_loop_callback().
 
-    explicit Impl(std::atomic_bool* st_break_loops) : st_break_loops_{st_break_loops} {}
+    explicit Impl(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler) : shutdown_signaler_{shutdown_signaler} {}
 
     void low_state_callback(const void* msg)
     {
@@ -179,7 +179,7 @@ public:
             // happens later, from the main thread, via this object's destructor (or
             // an explicit deinitialize()/disconnect() call) -- see the class-level
             // @note.
-            if (*st_break_loops_) {
+            if (shutdown_signaler_->should_shutdown()) {
                 arms_enabled_ = false;
             }
 
@@ -298,18 +298,18 @@ public:
 
 /**
  * @brief Constructs the driver.
- * @param st_break_loops Pointer to a shared std::atomic_bool (typically the same flag
- *        a SIGINT handler sets), forwarded to Impl so the background arm control loop
- *        callback can check it every tick. Must outlive this object.
- * @throws std::invalid_argument if st_break_loops is nullptr.
+ * @param shutdown_signaler Shared sas::ShutdownSignaler (typically the same one a
+ *        SIGINT handler calls shutdown() on), forwarded to Impl so the background arm
+ *        control loop callback can poll should_shutdown() every tick.
+ * @throws std::invalid_argument if shutdown_signaler is nullptr.
  * @note No hardware/DDS I/O happens here; see connect().
  */
-DriverUnitreeG1ArmSDK::DriverUnitreeG1ArmSDK(std::atomic_bool* st_break_loops)
+DriverUnitreeG1ArmSDK::DriverUnitreeG1ArmSDK(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler)
 {
-    if (st_break_loops == nullptr) {
-        throw std::invalid_argument("DriverUnitreeG1ArmSDK: st_break_loops must not be nullptr");
+    if (shutdown_signaler == nullptr) {
+        throw std::invalid_argument("DriverUnitreeG1ArmSDK: shutdown_signaler must not be nullptr");
     }
-    impl_ = std::make_shared<Impl>(st_break_loops);
+    impl_ = std::make_shared<Impl>(shutdown_signaler);
 }
 
 DriverUnitreeG1ArmSDK::~DriverUnitreeG1ArmSDK()

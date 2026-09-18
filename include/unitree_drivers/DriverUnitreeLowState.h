@@ -21,12 +21,12 @@
 
 #pragma once
 #include <array>
-#include <atomic>
 #include <cstddef>
 #include <memory>
 #include <vector>
 
 #include <Eigen/Dense>
+#include <sas_core/sas_shutdown_signaler.hpp>
 
 /**
  * @brief Subscribes to the Unitree SDK's low-level state topic (rt/lowstate) and
@@ -77,7 +77,7 @@
  *       background control loop: it only ever reads rt/lowstate, so there is nothing
  *       for it to publish or ramp down. The latest received message is cached and
  *       parsed on demand by the getters below, entirely on whichever thread the
- *       Unitree SDK invokes the DDS subscription callback on. st_break_loops is
+ *       Unitree SDK invokes the DDS subscription callback on. shutdown_signaler is
  *       still accepted and validated at construction for interface consistency with
  *       the other sub-drivers DriverUnitreeG1 aggregates (so it can be constructed
  *       and forwarded the same way), but it currently drives no behavior here.
@@ -174,8 +174,8 @@ public:
     DriverUnitreeLowState(DriverUnitreeLowState&&) = delete;
     DriverUnitreeLowState& operator=(DriverUnitreeLowState&&) = delete;
 
-    /// @throws std::invalid_argument if st_break_loops is nullptr.
-    explicit DriverUnitreeLowState(std::atomic_bool* st_break_loops, const ROBOT& robot_type);
+    /// @throws std::invalid_argument if shutdown_signaler is nullptr.
+    explicit DriverUnitreeLowState(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler, const ROBOT& robot_type);
     ~DriverUnitreeLowState();
 
     /**

@@ -1,11 +1,16 @@
 # ---------------------------------------------------------------------------
 # Library: low_state (wraps DriverUnitreeLowState)
 # ---------------------------------------------------------------------------
-# No sas_core dependency at all (no background control loop -- see the class's
-# own docs), so this target has no shared/static constraint forcing SHARED the
-# way loco_client/g1_arm_sdk do. Built SHARED anyway for consistency across the
-# package. Eigen3 is PUBLIC (Eigen/Dense is in the public header); unitree_sdk2
-# is only used in the .cpp, so it's PRIVATE here.
+# No background control loop (see the class's own docs) -- the ShutdownSignaler
+# it takes at construction drives no behavior here -- but its constructor still
+# takes a std::shared_ptr<sas::ShutdownSignaler> for interface consistency with
+# loco_client/g1_arm_sdk, so <sas_core/sas_shutdown_signaler.hpp> is now pulled
+# into this library's installed public header too (previously a non-issue for
+# this particular library, since it had no sas_core dependency at all). Same
+# $<BUILD_INTERFACE:...> treatment as loco_client/g1_arm_sdk applies here, and
+# for the same reason -- see the long comment in cmake/loco_client.cmake.
+# Eigen3 is PUBLIC (Eigen/Dense is in the public header); unitree_sdk2 is only
+# used in the .cpp, so it's PRIVATE here.
 add_library(low_state SHARED
     src/DriverUnitreeLowState.cpp
 )
@@ -21,6 +26,7 @@ target_include_directories(low_state PUBLIC
 target_link_libraries(low_state
     PUBLIC
         Eigen3::Eigen
+        $<BUILD_INTERFACE:sas_core_pure>
     PRIVATE
         unitree_sdk2
 )

@@ -149,9 +149,9 @@ public:
     // Not used to drive any active loop (see the class-level @note in the header);
     // kept only for constructor-signature consistency with the other sub-drivers
     // DriverUnitreeG1 aggregates.
-    std::atomic_bool* st_break_loops_;
+    std::shared_ptr<sas::ShutdownSignaler> shutdown_signaler_;
 
-    explicit Impl(std::atomic_bool* st_break_loops) : st_break_loops_{st_break_loops} {}
+    explicit Impl(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler) : shutdown_signaler_{shutdown_signaler} {}
 
     /**
      * @brief DDS subscription callback: copies the received message into
@@ -208,22 +208,21 @@ public:
 
 /**
  * @brief Constructs the wrapper. No network I/O happens here; see connect().
- * @param st_break_loops Pointer to a shared std::atomic_bool. Validated for
- *        consistency with the other sub-drivers but not used to drive any behavior
- *        in this class (see the class-level @note in the header). Must outlive this
- *        object.
+ * @param shutdown_signaler Shared sas::ShutdownSignaler. Validated for consistency
+ *        with the other sub-drivers but not used to drive any behavior in this class
+ *        (see the class-level @note in the header).
  * @param robot_type Which rt/lowstate message type to subscribe to. Fixed for the
  *        lifetime of this object (robot_type_ is const) -- construct a new instance
  *        if you need to talk to a different robot type.
- * @throws std::invalid_argument if st_break_loops is nullptr.
+ * @throws std::invalid_argument if shutdown_signaler is nullptr.
  */
-DriverUnitreeLowState::DriverUnitreeLowState(std::atomic_bool* st_break_loops, const ROBOT& robot_type)
+DriverUnitreeLowState::DriverUnitreeLowState(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler, const ROBOT& robot_type)
     : robot_type_{robot_type}
 {
-    if (st_break_loops == nullptr) {
-        throw std::invalid_argument("DriverUnitreeLowState: st_break_loops must not be nullptr");
+    if (shutdown_signaler == nullptr) {
+        throw std::invalid_argument("DriverUnitreeLowState: shutdown_signaler must not be nullptr");
     }
-    impl_ = std::make_shared<Impl>(st_break_loops);
+    impl_ = std::make_shared<Impl>(shutdown_signaler);
 }
 
 /**

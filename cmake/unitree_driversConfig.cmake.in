@@ -11,6 +11,21 @@ include(CMakeFindDependencyMacro)
 find_dependency(unitree_sdk2 REQUIRED)
 find_dependency(Eigen3 REQUIRED)
 
+# sas_core is intentionally NOT find_dependency'd here either, but for a third
+# reason distinct from dqrobotics's: every driver constructor now takes a
+# std::shared_ptr<sas::ShutdownSignaler>, so <sas_core/sas_shutdown_signaler.hpp>
+# is #include'd from the installed public headers -- but sas_core itself
+# installs/exports nothing when built with ROS2_BUILD=OFF (see the long
+# sas_core_pure comment in CMakeLists.txt), so there is no sas_core package
+# config here to find_dependency() even if we wanted to. Consumers of this
+# installed unitree_drivers package must therefore obtain sas_core on their
+# own (e.g. their own FetchContent of https://github.com/SmartArmStack/sas_core,
+# mirroring the block in unitree_drivers' own CMakeLists.txt) to get
+# sas::ShutdownSignaler's header on their include path, and must link sas_core
+# themselves if their code calls
+# shutdown_signaler->shutdown()/should_shutdown() directly rather than just
+# constructing/forwarding the shared_ptr.
+
 include("${CMAKE_CURRENT_LIST_DIR}/unitree_driversTargets.cmake")
 
 check_required_components(unitree_drivers)

@@ -51,13 +51,30 @@ endif()
 # sas_core_pure target it produces can only ever be a build-tree target, never
 # something a downstream find_package(unitree_drivers) could locate on its own.
 #
-# This is precisely why loco_client/g1_arm_sdk (in their own cmake/*.cmake files)
-# are built SHARED rather than STATIC: a shared library fully resolves and
-# embeds its PRIVATE dependencies at its own build/link time, so sas_core_pure
-# never needs to be visible to whatever links against the installed
-# unitree_drivers libraries later. If these were static libraries instead,
-# sas_core_pure would leak through as an unresolvable transitive dependency the
-# moment someone else's find_package(unitree_drivers) tried to use them.
+# This is precisely why loco_client/g1_arm_sdk/low_state (in their own
+# cmake/*.cmake files) are built SHARED rather than STATIC: a shared library
+# fully resolves and embeds its dependencies' compiled symbols at its own
+# build/link time, so sas_core_pure never needs to be visible to whatever links
+# against the installed unitree_drivers libraries later. If these were static
+# libraries instead, sas_core_pure would leak through as an unresolvable
+# transitive dependency the moment someone else's find_package(unitree_drivers)
+# tried to use them.
+#
+# All three of loco_client/g1_arm_sdk/low_state now also expose
+# sas::ShutdownSignaler (from sas_core_pure) in their own public headers --
+# every driver constructor takes a std::shared_ptr<sas::ShutdownSignaler> -- so
+# sas_core_pure is a genuine usage-requirement dependency of each installed
+# public header, not just a link-time implementation detail. Each cmake/*.cmake
+# fragment still can't make it a plain PUBLIC target_link_libraries() entry,
+# though: since sas_core_pure is never part of any export set (per the note
+# above), install(EXPORT unitree_driversTargets ...) below would refuse to
+# export a target that PUBLIC-depends on it. Each fragment instead wraps it in
+# $<BUILD_INTERFACE:sas_core_pure>, which keeps it visible to in-build-tree
+# consumers (add_subdirectory/FetchContent) while dropping it from what gets
+# exported to installed consumers -- who must then depend on sas_core
+# themselves (the same way this block does) to get sas_core's headers on their
+# include path and to link it if they call
+# shutdown_signaler->shutdown()/should_shutdown() directly.
 #
 # Guarded with `if(NOT TARGET sas_core_pure)` so this stays safe to use both
 # standalone and when unitree_drivers itself is add_subdirectory()'d/FetchContent's

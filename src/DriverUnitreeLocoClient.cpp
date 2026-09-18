@@ -54,7 +54,7 @@ public:
 
     std::array<double,3> target_high_level_velocities_{0,0,0};
 
-    std::atomic_bool* st_break_loops_; ///< Shared interruption flag, checked every tick in control_loop_callback().
+    std::shared_ptr<sas::ShutdownSignaler> shutdown_signaler_; ///< Shared shutdown coordinator, polled every tick in control_loop_callback().
 
     void create_client(const DriverUnitreeLocoClient::ROBOT& robot_type)
     {
@@ -94,7 +94,7 @@ public:
     *       requires unitree::robot::ChannelFactory::Instance()->Init() to have
     *       already run (see DriverUnitreeLocoClient::connect()).
     */
-    explicit Impl(std::atomic_bool* st_break_loops) : st_break_loops_{st_break_loops}
+    explicit Impl(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler) : shutdown_signaler_{shutdown_signaler}
     {
         /*
         switch (robot_type) {
@@ -168,7 +168,7 @@ public:
         // itself is a self-join deadlock. Actual thread teardown happens later, from
         // the main thread, via this object's destructor (or an explicit
         // deinitialize()/disconnect() call) -- see the class-level @note.
-        if (*st_break_loops_) {
+        if (shutdown_signaler_->should_shutdown()) {
             target_high_level_velocities_ = {0.0, 0.0, 0.0};
         }
         try {
@@ -229,26 +229,26 @@ public:
 
 /**
  * @brief Constructs the wrapper and the underlying concrete LocoClient for @p robot_type.
- * @param st_break_loops Pointer to a shared std::atomic_bool (typically the same flag
- *        a SIGINT handler sets), forwarded to Impl so the background control loop
- *        callback can check it every tick. Must outlive this object.
+ * @param shutdown_signaler Shared sas::ShutdownSignaler (typically the same one a
+ *        SIGINT handler calls shutdown() on), forwarded to Impl so the background
+ *        control loop callback can poll should_shutdown() every tick.
  * @param robot_type Which robot's LocoClient to instantiate. Fixed for the lifetime
  *        of this object (robot_type_ is const) -- construct a new instance if you
  *        need to talk to a different robot type.
  *
- * @throws std::invalid_argument if st_break_loops is nullptr.
+ * @throws std::invalid_argument if shutdown_signaler is nullptr.
  * @note No network I/O happens here. The underlying LocoClient::Init() call, which
  *       requires unitree::robot::ChannelFactory::Instance()->Init() to have already
  *       run, is deferred to connect().
  */
-DriverUnitreeLocoClient::DriverUnitreeLocoClient(std::atomic_bool *st_break_loops,
+DriverUnitreeLocoClient::DriverUnitreeLocoClient(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler,
                                                  const ROBOT& robot_type)
     : robot_type_{robot_type}
 {
-    if (st_break_loops == nullptr) {
-        throw std::invalid_argument("DriverUnitreeLocoClient: st_break_loops must not be nullptr");
+    if (shutdown_signaler == nullptr) {
+        throw std::invalid_argument("DriverUnitreeLocoClient: shutdown_signaler must not be nullptr");
     }
-    impl_ = std::make_shared<Impl>(st_break_loops);
+    impl_ = std::make_shared<Impl>(shutdown_signaler);
 }
 
 /**

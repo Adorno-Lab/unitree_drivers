@@ -1,7 +1,8 @@
 #pragma once
 #include <array>
-#include <atomic>
 #include <memory>
+
+#include <sas_core/sas_shutdown_signaler.hpp>
 
 /**
  * @brief Controls the G1's arms and waist over the rt/arm_sdk DDS topic, blending with
@@ -39,21 +40,21 @@
  *       this controller with whatever is driving DriverUnitreeLocoClient in the owning
  *       DriverUnitreeG1.
  *
- * @note Signal-driven shutdown: the caller passes a pointer to a shared
- *       std::atomic_bool (typically the same flag a SIGINT handler sets) at
- *       construction time. The background arm control loop callback checks this flag
- *       every tick and, the moment it becomes true, sets arms_enabled_ to false --
- *       reusing the same weight-ramp-to-zero logic disable_arm_control() triggers --
- *       so the arm starts disengaging within one control period (20 ms) of the signal,
- *       without waiting for the owning application to notice and call
- *       disable_arm_control()/deinitialize() itself. The callback deliberately does
- *       NOT call deinitialize() (which stops the control thread via
- *       sas::ThreadManager::stop()): that call blocks on std::thread::join(), and the
- *       callback runs ON the control thread itself, so joining it from there is a
- *       self-join deadlock. Actual thread teardown (and the final zero-weight publish)
- *       still happens via deinitialize()/disconnect(), called from the destructor (or
- *       explicitly) on the owning application's thread once its own loops observe the
- *       flag and unwind.
+ * @note Signal-driven shutdown: the caller passes a shared sas::ShutdownSignaler
+ *       (typically the same one a SIGINT handler calls shutdown() on) at construction
+ *       time. The background arm control loop callback polls
+ *       shutdown_signaler->should_shutdown() every tick and, the moment it becomes
+ *       true, sets arms_enabled_ to false -- reusing the same weight-ramp-to-zero
+ *       logic disable_arm_control() triggers -- so the arm starts disengaging within
+ *       one control period (20 ms) of the signal, without waiting for the owning
+ *       application to notice and call disable_arm_control()/deinitialize() itself.
+ *       The callback deliberately does NOT call deinitialize() (which stops the
+ *       control thread via sas::ThreadManager::stop()): that call blocks on
+ *       std::thread::join(), and the callback runs ON the control thread itself, so
+ *       joining it from there is a self-join deadlock. Actual thread teardown (and the
+ *       final zero-weight publish) still happens via deinitialize()/disconnect(),
+ *       called from the destructor (or explicitly) on the owning application's thread
+ *       once its own loops observe the signal and unwind.
  */
 class DriverUnitreeG1ArmSDK
 {
@@ -63,8 +64,8 @@ private:
 
 public:
     // Rule of five
-    /// @throws std::invalid_argument if st_break_loops is nullptr.
-    DriverUnitreeG1ArmSDK(std::atomic_bool* st_break_loops);
+    /// @throws std::invalid_argument if shutdown_signaler is nullptr.
+    DriverUnitreeG1ArmSDK(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler);
     // Delete copy constructor and assignment (prevents double initialization)
     DriverUnitreeG1ArmSDK(const DriverUnitreeG1ArmSDK&) = delete;
     DriverUnitreeG1ArmSDK& operator=(const DriverUnitreeG1ArmSDK&) = delete;

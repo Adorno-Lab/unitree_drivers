@@ -25,9 +25,10 @@
 
 #pragma once
 #include <array>
-#include <atomic>
 #include <memory>
 #include <vector>
+
+#include <sas_core/sas_shutdown_signaler.hpp>
 
 /**
  * @brief Wraps the Unitree SDK's high-level LocoClient (unitree::robot::g1::LocoClient
@@ -58,19 +59,19 @@
  *       process-wide singleton potentially shared with other sub-controllers (e.g. an
  *       arm-sdk controller) aggregated by the same owning driver.
  *
- * @note Signal-driven shutdown: the caller passes a pointer to a shared
- *       std::atomic_bool (typically the same flag a SIGINT handler sets) at
- *       construction time. The background control loop callback checks this flag
- *       every tick and, the moment it becomes true, zeroes the target velocity so
- *       locomotion stops within one control period (10 ms) of the signal, without
- *       waiting for the owning application to notice and call deinitialize() itself.
- *       The callback deliberately does NOT call deinitialize() (which stops the
- *       control thread via sas::ThreadManager::stop()): that call blocks on
- *       std::thread::join(), and the callback runs ON the control thread itself, so
- *       joining it from there is a self-join deadlock. Actual thread teardown still
- *       happens via deinitialize()/disconnect(), called from the destructor (or
- *       explicitly) on the owning application's thread once its own loops observe the
- *       flag and unwind.
+ * @note Signal-driven shutdown: the caller passes a shared sas::ShutdownSignaler
+ *       (typically the same one a SIGINT handler calls shutdown() on) at construction
+ *       time. The background control loop callback polls
+ *       shutdown_signaler->should_shutdown() every tick and, the moment it becomes
+ *       true, zeroes the target velocity so locomotion stops within one control period
+ *       (10 ms) of the signal, without waiting for the owning application to notice
+ *       and call deinitialize() itself. The callback deliberately does NOT call
+ *       deinitialize() (which stops the control thread via sas::ThreadManager::stop()):
+ *       that call blocks on std::thread::join(), and the callback runs ON the control
+ *       thread itself, so joining it from there is a self-join deadlock. Actual thread
+ *       teardown still happens via deinitialize()/disconnect(), called from the
+ *       destructor (or explicitly) on the owning application's thread once its own
+ *       loops observe the signal and unwind.
  */
 class DriverUnitreeLocoClient
 {
@@ -95,8 +96,8 @@ public:
     DriverUnitreeLocoClient(DriverUnitreeLocoClient&&) = delete;
     DriverUnitreeLocoClient& operator=(DriverUnitreeLocoClient&&) = delete;
 
-    /// @throws std::invalid_argument if st_break_loops is nullptr.
-    explicit DriverUnitreeLocoClient(std::atomic_bool* st_break_loops, const ROBOT& robot_type);
+    /// @throws std::invalid_argument if shutdown_signaler is nullptr.
+    explicit DriverUnitreeLocoClient(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler, const ROBOT& robot_type);
     ~DriverUnitreeLocoClient();
 
     void connect();
