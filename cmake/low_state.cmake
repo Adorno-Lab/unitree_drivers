@@ -26,7 +26,7 @@ target_include_directories(low_state PUBLIC
 target_link_libraries(low_state
     PUBLIC
         Eigen3::Eigen
-        $<BUILD_INTERFACE:sas_core_pure>
+        marinholab::sas::core
     PRIVATE
         unitree_sdk2
 )

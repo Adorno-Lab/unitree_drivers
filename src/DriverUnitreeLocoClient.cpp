@@ -33,7 +33,7 @@
 #include <variant>
 #include <mutex>
 #include <atomic>
-#include <sas_core/sas_thread_manager.hpp>
+#include <marinholab/sas/core/sas_thread_manager.hpp>
 #include <functional>
 
 class DriverUnitreeLocoClient::Impl
@@ -46,7 +46,7 @@ public:
     std::variant<std::unique_ptr<unitree::robot::g1::LocoClient>,
                  std::unique_ptr<unitree::robot::h1::LocoClient>> loco_client_;
 
-    std::unique_ptr<sas::ThreadManager> control_thread_;
+    std::unique_ptr<marinholab::sas::core::ThreadManager> control_thread_;
     mutable std::mutex data_mutex_;
 
     std::atomic<bool> is_connected_{false};
@@ -54,7 +54,7 @@ public:
 
     std::array<double,3> target_high_level_velocities_{0,0,0};
 
-    std::shared_ptr<sas::ShutdownSignaler> shutdown_signaler_; ///< Shared shutdown coordinator, polled every tick in control_loop_callback().
+    std::shared_ptr<marinholab::sas::core::ShutdownSignaler> shutdown_signaler_; ///< Shared shutdown coordinator, polled every tick in control_loop_callback().
 
     void create_client(const DriverUnitreeLocoClient::ROBOT& robot_type)
     {
@@ -94,7 +94,8 @@ public:
     *       requires unitree::robot::ChannelFactory::Instance()->Init() to have
     *       already run (see DriverUnitreeLocoClient::connect()).
     */
-    explicit Impl(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler) : shutdown_signaler_{shutdown_signaler}
+    explicit Impl(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler)
+        : shutdown_signaler_{shutdown_signaler}
     {
         /*
         switch (robot_type) {
@@ -193,12 +194,12 @@ public:
      * @param priority Thread scheduling priority to request from sas::ThreadManager.
      */
     void start_control_thread(const double& period,
-                              const sas::ThreadManager::PRIORITY& priority)
+                              const marinholab::sas::core::ThreadManager::PRIORITY& priority)
     {
         if (control_thread_ && control_thread_->is_running()) {
             return;
         }
-        control_thread_ = std::make_unique<sas::ThreadManager>(
+        control_thread_ = std::make_unique<marinholab::sas::core::ThreadManager>(
             "unitree_loco_client_control",
             period,
             std::bind(&Impl::control_loop_callback, this),
@@ -241,7 +242,7 @@ public:
  *       requires unitree::robot::ChannelFactory::Instance()->Init() to have already
  *       run, is deferred to connect().
  */
-DriverUnitreeLocoClient::DriverUnitreeLocoClient(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler,
+DriverUnitreeLocoClient::DriverUnitreeLocoClient(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler> &shutdown_signaler,
                                                  const ROBOT& robot_type)
     : robot_type_{robot_type}
 {
@@ -305,7 +306,7 @@ void DriverUnitreeLocoClient::initialize()
     }
     impl_->is_initialized_ = true;
     if (!impl_->control_thread_ || !impl_->control_thread_->is_running()) {
-        impl_->start_control_thread(0.01, sas::ThreadManager::PRIORITY::NORMAL);
+        impl_->start_control_thread(0.01, marinholab::sas::core::ThreadManager::PRIORITY::NORMAL);
     }
 }
 

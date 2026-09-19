@@ -149,9 +149,9 @@ public:
     // Not used to drive any active loop (see the class-level @note in the header);
     // kept only for constructor-signature consistency with the other sub-drivers
     // DriverUnitreeG1 aggregates.
-    std::shared_ptr<sas::ShutdownSignaler> shutdown_signaler_;
+    std::shared_ptr<marinholab::sas::core::ShutdownSignaler> shutdown_signaler_;
 
-    explicit Impl(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler) : shutdown_signaler_{shutdown_signaler} {}
+    explicit Impl(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler) : shutdown_signaler_{shutdown_signaler} {}
 
     /**
      * @brief DDS subscription callback: copies the received message into
@@ -216,7 +216,7 @@ public:
  *        if you need to talk to a different robot type.
  * @throws std::invalid_argument if shutdown_signaler is nullptr.
  */
-DriverUnitreeLowState::DriverUnitreeLowState(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler, const ROBOT& robot_type)
+DriverUnitreeLowState::DriverUnitreeLowState(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler> &shutdown_signaler, const ROBOT& robot_type)
     : robot_type_{robot_type}
 {
     if (shutdown_signaler == nullptr) {

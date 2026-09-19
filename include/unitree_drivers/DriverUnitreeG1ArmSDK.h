@@ -2,7 +2,7 @@
 #include <array>
 #include <memory>
 
-#include <sas_core/sas_shutdown_signaler.hpp>
+#include  <marinholab/sas/core/sas_shutdown_signaler.hpp>
 
 /**
  * @brief Controls the G1's arms and waist over the rt/arm_sdk DDS topic, blending with
@@ -65,7 +65,7 @@ private:
 public:
     // Rule of five
     /// @throws std::invalid_argument if shutdown_signaler is nullptr.
-    DriverUnitreeG1ArmSDK(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler);
+    DriverUnitreeG1ArmSDK(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler);
     // Delete copy constructor and assignment (prevents double initialization)
     DriverUnitreeG1ArmSDK(const DriverUnitreeG1ArmSDK&) = delete;
     DriverUnitreeG1ArmSDK& operator=(const DriverUnitreeG1ArmSDK&) = delete;

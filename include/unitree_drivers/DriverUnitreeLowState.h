@@ -26,7 +26,7 @@
 #include <vector>
 
 #include <Eigen/Dense>
-#include <sas_core/sas_shutdown_signaler.hpp>
+#include <marinholab/sas/core/sas_shutdown_signaler.hpp>
 
 /**
  * @brief Subscribes to the Unitree SDK's low-level state topic (rt/lowstate) and
@@ -175,7 +175,7 @@ public:
     DriverUnitreeLowState& operator=(DriverUnitreeLowState&&) = delete;
 
     /// @throws std::invalid_argument if shutdown_signaler is nullptr.
-    explicit DriverUnitreeLowState(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler, const ROBOT& robot_type);
+    explicit DriverUnitreeLowState(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler, const ROBOT& robot_type);
     ~DriverUnitreeLowState();
 
     /**

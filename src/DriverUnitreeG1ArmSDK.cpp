@@ -3,7 +3,7 @@
 #include <unitree/idl/hg/LowState_.hpp>
 #include <unitree/robot/channel/channel_publisher.hpp>
 #include <unitree/robot/channel/channel_subscriber.hpp>
-#include <sas_core/sas_thread_manager.hpp>
+#include <marinholab/sas/core/sas_thread_manager.hpp>
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
@@ -101,7 +101,7 @@ public:
     std::atomic<bool> is_connected_{false};
     std::atomic<bool> is_initialized_{false};
 
-    std::unique_ptr<sas::ThreadManager> arm_control_thread_;
+    std::unique_ptr<marinholab::sas::core::ThreadManager> arm_control_thread_;
     mutable std::mutex data_mutex_;
 
     // Arm control (DDS)
@@ -124,9 +124,10 @@ public:
     };
     static constexpr int kWeightIndex = kNotUsedJoint;
 
-    std::shared_ptr<sas::ShutdownSignaler> shutdown_signaler_; ///< Shared shutdown coordinator, polled every tick in arm_control_loop_callback().
+    std::shared_ptr<marinholab::sas::core::ShutdownSignaler> shutdown_signaler_; ///< Shared shutdown coordinator, polled every tick in arm_control_loop_callback().
 
-    explicit Impl(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler) : shutdown_signaler_{shutdown_signaler} {}
+    explicit Impl(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler)
+        : shutdown_signaler_{shutdown_signaler} {}
 
     void low_state_callback(const void* msg)
     {
@@ -236,13 +237,13 @@ public:
     }
 
     void start_arm_control_thread(const double& period,
-                                  const sas::ThreadManager::PRIORITY& priority)
+                                  const marinholab::sas::core::ThreadManager::PRIORITY& priority)
     {
         if (arm_control_thread_ && arm_control_thread_->is_running()) {
             return; // Already running
         }
         arm_control_period_ = period;
-        arm_control_thread_ = std::make_unique<sas::ThreadManager>(
+        arm_control_thread_ = std::make_unique<marinholab::sas::core::ThreadManager>(
             "g1_arm_sdk_control",
             period,
             std::bind(&Impl::arm_control_loop_callback, this),
@@ -304,7 +305,7 @@ public:
  * @throws std::invalid_argument if shutdown_signaler is nullptr.
  * @note No hardware/DDS I/O happens here; see connect().
  */
-DriverUnitreeG1ArmSDK::DriverUnitreeG1ArmSDK(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler)
+DriverUnitreeG1ArmSDK::DriverUnitreeG1ArmSDK(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler)
 {
     if (shutdown_signaler == nullptr) {
         throw std::invalid_argument("DriverUnitreeG1ArmSDK: shutdown_signaler must not be nullptr");
@@ -344,7 +345,7 @@ void DriverUnitreeG1ArmSDK::initialize()
     }
     impl_->is_initialized_ = true;
     if (!impl_->arm_control_thread_ || !impl_->arm_control_thread_->is_running()) {
-        impl_->start_arm_control_thread(impl_->arm_control_period_, sas::ThreadManager::PRIORITY::NORMAL);
+        impl_->start_arm_control_thread(impl_->arm_control_period_, marinholab::sas::core::ThreadManager::PRIORITY::NORMAL);
     }
 }
 

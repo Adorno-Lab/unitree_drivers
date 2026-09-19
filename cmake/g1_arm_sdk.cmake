@@ -32,7 +32,7 @@ target_include_directories(g1_arm_sdk PUBLIC
 target_link_libraries(g1_arm_sdk
     PUBLIC
         unitree_sdk2
-        $<BUILD_INTERFACE:sas_core_pure>
+        marinholab::sas::core
 )
 
 set_target_properties(g1_arm_sdk PROPERTIES

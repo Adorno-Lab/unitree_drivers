@@ -41,7 +41,7 @@ target_link_libraries(loco_client
         unitree_sdk2
         Eigen3::Eigen
         ${DQROBOTICS_LIBRARY}
-        $<BUILD_INTERFACE:sas_core_pure>
+        marinholab::sas::core
 )
 
 set_target_properties(loco_client PROPERTIES

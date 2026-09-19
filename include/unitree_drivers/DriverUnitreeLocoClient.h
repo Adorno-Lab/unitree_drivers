@@ -28,7 +28,7 @@
 #include <memory>
 #include <vector>
 
-#include <sas_core/sas_shutdown_signaler.hpp>
+#include <marinholab/sas/core/sas_shutdown_signaler.hpp>
 
 /**
  * @brief Wraps the Unitree SDK's high-level LocoClient (unitree::robot::g1::LocoClient
@@ -97,7 +97,7 @@ public:
     DriverUnitreeLocoClient& operator=(DriverUnitreeLocoClient&&) = delete;
 
     /// @throws std::invalid_argument if shutdown_signaler is nullptr.
-    explicit DriverUnitreeLocoClient(const std::shared_ptr<sas::ShutdownSignaler>& shutdown_signaler, const ROBOT& robot_type);
+    explicit DriverUnitreeLocoClient(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler, const ROBOT& robot_type);
     ~DriverUnitreeLocoClient();
 
     void connect();
