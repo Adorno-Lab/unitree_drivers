@@ -19,7 +19,7 @@ include(CMakePackageConfigHelpers)
 
 # ---------------------------------------------------------------------------
 # Dependencies shared by more than one library below. Each library's own
-# cmake/<name>.cmake fragment only needs to know which of these it uses, not
+# cmake/<n>.cmake fragment only needs to know which of these it uses, not
 # how to find them -- kept here once instead of duplicated three times.
 # ---------------------------------------------------------------------------
 
@@ -50,11 +50,12 @@ find_package(marinholab_sas_core REQUIRED)
 
 # ---------------------------------------------------------------------------
 # One target per Lego piece. Each file defines its own add_library(), include
-# dirs, link libraries, and version properties -- see cmake/<name>.cmake.
+# dirs, link libraries, and version properties -- see cmake/<n>.cmake.
 # ---------------------------------------------------------------------------
 include(cmake/loco_client.cmake)
 include(cmake/g1_arm_sdk.cmake)
 include(cmake/low_state.cmake)
+include(cmake/low_cmd.cmake)
 
 # ---------------------------------------------------------------------------
 # Install: headers, libraries, and the exported CMake package
@@ -63,7 +64,7 @@ install(DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(TARGETS loco_client g1_arm_sdk low_state
+install(TARGETS loco_client g1_arm_sdk low_state low_cmd
     EXPORT unitree_driversTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -101,4 +102,5 @@ install(FILES
 #     unitree_drivers::loco_client
 #     unitree_drivers::g1_arm_sdk
 #     unitree_drivers::low_state
+#     unitree_drivers::low_cmd
 #)
