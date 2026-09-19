@@ -4,13 +4,7 @@
 # No background control loop (see the class's own docs) -- the ShutdownSignaler
 # it takes at construction drives no behavior here -- but its constructor still
 # takes a std::shared_ptr<sas::ShutdownSignaler> for interface consistency with
-# loco_client/g1_arm_sdk, so <sas_core/sas_shutdown_signaler.hpp> is now pulled
-# into this library's installed public header too (previously a non-issue for
-# this particular library, since it had no sas_core dependency at all). Same
-# $<BUILD_INTERFACE:...> treatment as loco_client/g1_arm_sdk applies here, and
-# for the same reason -- see the long comment in cmake/loco_client.cmake.
-# Eigen3 is PUBLIC (Eigen/Dense is in the public header); unitree_sdk2 is only
-# used in the .cpp, so it's PRIVATE here.
+# loco_client/g1_arm_sdk.
 add_library(low_state SHARED
     src/DriverUnitreeLowState.cpp
 )
