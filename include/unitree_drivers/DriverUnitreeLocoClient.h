@@ -85,6 +85,7 @@ private:
     class Impl;
     std::shared_ptr<Impl> impl_;
     const ROBOT robot_type_;
+    double control_period_;
 
 public:
 
@@ -97,7 +98,9 @@ public:
     DriverUnitreeLocoClient& operator=(DriverUnitreeLocoClient&&) = delete;
 
     /// @throws std::invalid_argument if shutdown_signaler is nullptr.
-    explicit DriverUnitreeLocoClient(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler, const ROBOT& robot_type);
+    explicit DriverUnitreeLocoClient(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler,
+                                     const ROBOT& robot_type,
+                                     const double& control_period = 0.01);
     ~DriverUnitreeLocoClient();
 
     void connect();

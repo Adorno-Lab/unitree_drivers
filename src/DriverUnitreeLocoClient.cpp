@@ -236,6 +236,11 @@ public:
  * @param robot_type Which robot's LocoClient to instantiate. Fixed for the lifetime
  *        of this object (robot_type_ is const) -- construct a new instance if you
  *        need to talk to a different robot type.
+ * @param control_period Period, in seconds, of the background control loop. Stored
+ *        directly on this wrapper (control_period_ is a member of
+ *        DriverUnitreeLocoClient, not forwarded into Impl at construction time here)
+ *        and used later, once initialize() starts the control thread, to drive that
+ *        loop's actual tick rate.
  *
  * @throws std::invalid_argument if shutdown_signaler is nullptr.
  * @note No network I/O happens here. The underlying LocoClient::Init() call, which
@@ -243,8 +248,9 @@ public:
  *       run, is deferred to connect().
  */
 DriverUnitreeLocoClient::DriverUnitreeLocoClient(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler> &shutdown_signaler,
-                                                 const ROBOT& robot_type)
-    : robot_type_{robot_type}
+                                                 const ROBOT& robot_type,
+                                                 const double &control_period)
+    : robot_type_{robot_type}, control_period_{control_period}
 {
     if (shutdown_signaler == nullptr) {
         throw std::invalid_argument("DriverUnitreeLocoClient: shutdown_signaler must not be nullptr");
@@ -306,7 +312,7 @@ void DriverUnitreeLocoClient::initialize()
     }
     impl_->is_initialized_ = true;
     if (!impl_->control_thread_ || !impl_->control_thread_->is_running()) {
-        impl_->start_control_thread(0.01, marinholab::sas::core::ThreadManager::PRIORITY::NORMAL);
+        impl_->start_control_thread(control_period_, marinholab::sas::core::ThreadManager::PRIORITY::NORMAL);
     }
 }
 

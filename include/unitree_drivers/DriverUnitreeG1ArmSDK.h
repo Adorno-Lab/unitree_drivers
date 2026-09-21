@@ -65,7 +65,8 @@ private:
 public:
     // Rule of five
     /// @throws std::invalid_argument if shutdown_signaler is nullptr.
-    DriverUnitreeG1ArmSDK(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler);
+    DriverUnitreeG1ArmSDK(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler,
+                          const double& control_period = 0.02);
     // Delete copy constructor and assignment (prevents double initialization)
     DriverUnitreeG1ArmSDK(const DriverUnitreeG1ArmSDK&) = delete;
     DriverUnitreeG1ArmSDK& operator=(const DriverUnitreeG1ArmSDK&) = delete;

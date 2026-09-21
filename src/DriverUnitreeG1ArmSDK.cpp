@@ -126,8 +126,12 @@ public:
 
     std::shared_ptr<marinholab::sas::core::ShutdownSignaler> shutdown_signaler_; ///< Shared shutdown coordinator, polled every tick in arm_control_loop_callback().
 
-    explicit Impl(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler)
-        : shutdown_signaler_{shutdown_signaler} {}
+    explicit Impl(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler,
+                  const double& control_period)
+        : shutdown_signaler_{shutdown_signaler}, arm_control_period_{control_period}
+    {
+
+    }
 
     void low_state_callback(const void* msg)
     {
@@ -302,15 +306,23 @@ public:
  * @param shutdown_signaler Shared sas::ShutdownSignaler (typically the same one a
  *        SIGINT handler calls shutdown() on), forwarded to Impl so the background arm
  *        control loop callback can poll should_shutdown() every tick.
+ * @param control_period Period, in seconds, of the background arm control loop --
+ *        forwarded to Impl and used as arm_control_period_ once initialize() starts
+ *        the control thread (see start_arm_control_thread()). Also used directly
+ *        inside the control loop itself to scale weight_rate_/max_joint_velocity_ into
+ *        a per-tick delta_weight/max_joint_delta (see arm_control_loop_callback()), so
+ *        it must match whatever period the thread is actually ticking at for the
+ *        weight ramp and trajectory tracking to move at their intended real-time rate.
  * @throws std::invalid_argument if shutdown_signaler is nullptr.
  * @note No hardware/DDS I/O happens here; see connect().
  */
-DriverUnitreeG1ArmSDK::DriverUnitreeG1ArmSDK(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler)
+DriverUnitreeG1ArmSDK::DriverUnitreeG1ArmSDK(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler,
+                                             const double &control_period)
 {
     if (shutdown_signaler == nullptr) {
         throw std::invalid_argument("DriverUnitreeG1ArmSDK: shutdown_signaler must not be nullptr");
     }
-    impl_ = std::make_shared<Impl>(shutdown_signaler);
+    impl_ = std::make_shared<Impl>(shutdown_signaler, control_period);
 }
 
 DriverUnitreeG1ArmSDK::~DriverUnitreeG1ArmSDK()
