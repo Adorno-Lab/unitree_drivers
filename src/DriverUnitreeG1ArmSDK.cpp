@@ -3,7 +3,7 @@
 #include <unitree/idl/hg/LowState_.hpp>
 #include <unitree/robot/channel/channel_publisher.hpp>
 #include <unitree/robot/channel/channel_subscriber.hpp>
-#include <sas_core/sas_thread_manager.hpp>
+#include <marinholab/sas/core/sas_thread_manager.hpp>
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
@@ -101,7 +101,7 @@ public:
     std::atomic<bool> is_connected_{false};
     std::atomic<bool> is_initialized_{false};
 
-    std::unique_ptr<sas::ThreadManager> arm_control_thread_;
+    std::unique_ptr<marinholab::sas::core::ThreadManager> arm_control_thread_;
     mutable std::mutex data_mutex_;
 
     // Arm control (DDS)
@@ -124,9 +124,14 @@ public:
     };
     static constexpr int kWeightIndex = kNotUsedJoint;
 
-    std::atomic_bool* st_break_loops_; ///< Shared interruption flag, checked every tick in arm_control_loop_callback().
+    std::shared_ptr<marinholab::sas::core::ShutdownSignaler> shutdown_signaler_; ///< Shared shutdown coordinator, polled every tick in arm_control_loop_callback().
 
-    explicit Impl(std::atomic_bool* st_break_loops) : st_break_loops_{st_break_loops} {}
+    explicit Impl(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler,
+                  const double& control_period)
+        : shutdown_signaler_{shutdown_signaler}, arm_control_period_{control_period}
+    {
+
+    }
 
     void low_state_callback(const void* msg)
     {
@@ -179,7 +184,7 @@ public:
             // happens later, from the main thread, via this object's destructor (or
             // an explicit deinitialize()/disconnect() call) -- see the class-level
             // @note.
-            if (*st_break_loops_) {
+            if (shutdown_signaler_->should_shutdown()) {
                 arms_enabled_ = false;
             }
 
@@ -236,13 +241,13 @@ public:
     }
 
     void start_arm_control_thread(const double& period,
-                                  const sas::ThreadManager::PRIORITY& priority)
+                                  const marinholab::sas::core::ThreadManager::PRIORITY& priority)
     {
         if (arm_control_thread_ && arm_control_thread_->is_running()) {
             return; // Already running
         }
         arm_control_period_ = period;
-        arm_control_thread_ = std::make_unique<sas::ThreadManager>(
+        arm_control_thread_ = std::make_unique<marinholab::sas::core::ThreadManager>(
             "g1_arm_sdk_control",
             period,
             std::bind(&Impl::arm_control_loop_callback, this),
@@ -298,18 +303,26 @@ public:
 
 /**
  * @brief Constructs the driver.
- * @param st_break_loops Pointer to a shared std::atomic_bool (typically the same flag
- *        a SIGINT handler sets), forwarded to Impl so the background arm control loop
- *        callback can check it every tick. Must outlive this object.
- * @throws std::invalid_argument if st_break_loops is nullptr.
+ * @param shutdown_signaler Shared sas::ShutdownSignaler (typically the same one a
+ *        SIGINT handler calls shutdown() on), forwarded to Impl so the background arm
+ *        control loop callback can poll should_shutdown() every tick.
+ * @param control_period Period, in seconds, of the background arm control loop --
+ *        forwarded to Impl and used as arm_control_period_ once initialize() starts
+ *        the control thread (see start_arm_control_thread()). Also used directly
+ *        inside the control loop itself to scale weight_rate_/max_joint_velocity_ into
+ *        a per-tick delta_weight/max_joint_delta (see arm_control_loop_callback()), so
+ *        it must match whatever period the thread is actually ticking at for the
+ *        weight ramp and trajectory tracking to move at their intended real-time rate.
+ * @throws std::invalid_argument if shutdown_signaler is nullptr.
  * @note No hardware/DDS I/O happens here; see connect().
  */
-DriverUnitreeG1ArmSDK::DriverUnitreeG1ArmSDK(std::atomic_bool* st_break_loops)
+DriverUnitreeG1ArmSDK::DriverUnitreeG1ArmSDK(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler,
+                                             const double &control_period)
 {
-    if (st_break_loops == nullptr) {
-        throw std::invalid_argument("DriverUnitreeG1ArmSDK: st_break_loops must not be nullptr");
+    if (shutdown_signaler == nullptr) {
+        throw std::invalid_argument("DriverUnitreeG1ArmSDK: shutdown_signaler must not be nullptr");
     }
-    impl_ = std::make_shared<Impl>(st_break_loops);
+    impl_ = std::make_shared<Impl>(shutdown_signaler, control_period);
 }
 
 DriverUnitreeG1ArmSDK::~DriverUnitreeG1ArmSDK()
@@ -344,7 +357,7 @@ void DriverUnitreeG1ArmSDK::initialize()
     }
     impl_->is_initialized_ = true;
     if (!impl_->arm_control_thread_ || !impl_->arm_control_thread_->is_running()) {
-        impl_->start_arm_control_thread(impl_->arm_control_period_, sas::ThreadManager::PRIORITY::NORMAL);
+        impl_->start_arm_control_thread(impl_->arm_control_period_, marinholab::sas::core::ThreadManager::PRIORITY::NORMAL);
     }
 }
 

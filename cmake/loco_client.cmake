@@ -3,8 +3,8 @@
 # ---------------------------------------------------------------------------
 # PUBLIC deps: unitree_sdk2 and dqrobotics/Eigen appear in the installed public
 # header (DriverUnitreeLocoClient.h includes <dqrobotics/DQ.h>), so consumers
-# need them too. sas_core_pure is PRIVATE -- see the note in CMakeLists.txt on
-# why that forces this target to be SHARED rather than STATIC.
+# need them too.
+
 add_library(loco_client SHARED
     src/DriverUnitreeLocoClient.cpp
 )
@@ -22,8 +22,7 @@ target_link_libraries(loco_client
         unitree_sdk2
         Eigen3::Eigen
         ${DQROBOTICS_LIBRARY}
-    PRIVATE
-        sas_core_pure
+        marinholab::sas::core
 )
 
 set_target_properties(loco_client PROPERTIES

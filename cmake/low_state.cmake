@@ -1,11 +1,10 @@
 # ---------------------------------------------------------------------------
 # Library: low_state (wraps DriverUnitreeLowState)
 # ---------------------------------------------------------------------------
-# No sas_core dependency at all (no background control loop -- see the class's
-# own docs), so this target has no shared/static constraint forcing SHARED the
-# way loco_client/g1_arm_sdk do. Built SHARED anyway for consistency across the
-# package. Eigen3 is PUBLIC (Eigen/Dense is in the public header); unitree_sdk2
-# is only used in the .cpp, so it's PRIVATE here.
+# No background control loop (see the class's own docs) -- the ShutdownSignaler
+# it takes at construction drives no behavior here -- but its constructor still
+# takes a std::shared_ptr<sas::ShutdownSignaler> for interface consistency with
+# loco_client/g1_arm_sdk.
 add_library(low_state SHARED
     src/DriverUnitreeLowState.cpp
 )
@@ -21,6 +20,7 @@ target_include_directories(low_state PUBLIC
 target_link_libraries(low_state
     PUBLIC
         Eigen3::Eigen
+        marinholab::sas::core
     PRIVATE
         unitree_sdk2
 )

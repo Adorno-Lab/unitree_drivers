@@ -2,11 +2,11 @@
 # Library: g1_arm_sdk (wraps DriverUnitreeG1ArmSDK)
 # ---------------------------------------------------------------------------
 # No dqrobotics/Eigen dependency: DriverUnitreeG1ArmSDK.h only pulls in <array>,
-# <atomic>, <memory>. unitree_sdk2 is used only in the .cpp, but is kept PUBLIC
-# here anyway since it's the shared vocabulary type of this whole package family
-# (consistent with loco_client) -- feel free to make it PRIVATE if that's not a
-# concern for your consumers. sas_core_pure is PRIVATE -- see the note in
-# CMakeLists.txt on why that forces this target to be SHARED rather than STATIC.
+# <memory>, <sas_core/sas_shutdown_signaler.hpp>. unitree_sdk2 is used only in
+# the .cpp, but is kept PUBLIC here anyway since it's the shared vocabulary type
+# of this whole package family (consistent with loco_client) -- feel free to
+# make it PRIVATE if that's not a concern for your consumers.
+
 add_library(g1_arm_sdk SHARED
     src/DriverUnitreeG1ArmSDK.cpp
 )
@@ -22,8 +22,7 @@ target_include_directories(g1_arm_sdk PUBLIC
 target_link_libraries(g1_arm_sdk
     PUBLIC
         unitree_sdk2
-    PRIVATE
-        sas_core_pure
+        marinholab::sas::core
 )
 
 set_target_properties(g1_arm_sdk PROPERTIES

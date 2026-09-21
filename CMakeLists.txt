@@ -19,7 +19,7 @@ include(CMakePackageConfigHelpers)
 
 # ---------------------------------------------------------------------------
 # Dependencies shared by more than one library below. Each library's own
-# cmake/<name>.cmake fragment only needs to know which of these it uses, not
+# cmake/<n>.cmake fragment only needs to know which of these it uses, not
 # how to find them -- kept here once instead of duplicated three times.
 # ---------------------------------------------------------------------------
 
@@ -45,41 +45,17 @@ if(NOT DQROBOTICS_LIBRARY)
     )
 endif()
 
-# sas_core, when built outside a ROS2/ament workspace (ROS2_BUILD=OFF), does not
-# install or export ANYTHING -- its install()/ament_export_targets() calls are
-# gated behind `if(ROS2_BUILD)` in its own CMakeLists.txt. That means the
-# sas_core_pure target it produces can only ever be a build-tree target, never
-# something a downstream find_package(unitree_drivers) could locate on its own.
-#
-# This is precisely why loco_client/g1_arm_sdk (in their own cmake/*.cmake files)
-# are built SHARED rather than STATIC: a shared library fully resolves and
-# embeds its PRIVATE dependencies at its own build/link time, so sas_core_pure
-# never needs to be visible to whatever links against the installed
-# unitree_drivers libraries later. If these were static libraries instead,
-# sas_core_pure would leak through as an unresolvable transitive dependency the
-# moment someone else's find_package(unitree_drivers) tried to use them.
-#
-# Guarded with `if(NOT TARGET sas_core_pure)` so this stays safe to use both
-# standalone and when unitree_drivers itself is add_subdirectory()'d/FetchContent's
-# by a parent project that also happens to need sas_core.
-if(NOT TARGET sas_core_pure)
-    include(FetchContent)
-    FetchContent_Declare(
-        sas_core
-        GIT_REPOSITORY https://github.com/SmartArmStack/sas_core.git
-        GIT_TAG        jazzy
-    )
-    set(ROS2_BUILD OFF CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(sas_core)
-endif()
+# The sas core is now available in https://github.com/MarinhoLab/sas_cpp
+find_package(marinholab_sas_core REQUIRED)
 
 # ---------------------------------------------------------------------------
 # One target per Lego piece. Each file defines its own add_library(), include
-# dirs, link libraries, and version properties -- see cmake/<name>.cmake.
+# dirs, link libraries, and version properties -- see cmake/<n>.cmake.
 # ---------------------------------------------------------------------------
 include(cmake/loco_client.cmake)
 include(cmake/g1_arm_sdk.cmake)
 include(cmake/low_state.cmake)
+include(cmake/low_cmd.cmake)
 
 # ---------------------------------------------------------------------------
 # Install: headers, libraries, and the exported CMake package
@@ -88,7 +64,7 @@ install(DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(TARGETS loco_client g1_arm_sdk low_state
+install(TARGETS loco_client g1_arm_sdk low_state low_cmd
     EXPORT unitree_driversTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -126,4 +102,5 @@ install(FILES
 #     unitree_drivers::loco_client
 #     unitree_drivers::g1_arm_sdk
 #     unitree_drivers::low_state
+#     unitree_drivers::low_cmd
 #)
