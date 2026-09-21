@@ -14,6 +14,7 @@ Robot-agnostic, pImpl-based C++ classes that wrap the Unitree SDK for locomotion
 - [unitree_sdk2](https://github.com/unitreerobotics/unitree_sdk2) — build and install it first, following its own instructions.
 - Eigen3 — `sudo apt install libeigen3-dev`
 - [DQ Robotics](https://dqrobotics.github.io) — installed system-wide (e.g. via their apt PPA).
+- [sas_cpp](https://github.com/MarinhoLab/sas_cpp)
 
 If you're installing any of the above without sudo, install them to the same custom prefix `~/opt`, and see the non-sudo instructions for `unitree_drivers` itself.
 
