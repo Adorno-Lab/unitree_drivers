@@ -1,36 +1,40 @@
 /*
 # (C) Copyright 2024-2025 Adorno-Lab software developments
 #
-#    This file is part of Adorno-lab.
+# This file is part of Adorno-lab.
 #
-#    This is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Lesser General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#    This software is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Lesser General Public License for more details.
+# This software is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
 #
-#    You should have received a copy of the GNU Lesser General Public License
-#    along with this software.  If not, see <https://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with this software. If not, see <https://www.gnu.org/licenses/>.
 #
 # ################################################################
 */
-
 #include <unitree_drivers/DriverUnitreeLowState.h>
+
 #include <unitree/idl/hg/LowState_.hpp>
 #include <unitree/idl/go2/LowState_.hpp>
 #include <unitree/robot/channel/channel_subscriber.hpp>
-#include <stdexcept>
-#include <variant>
-#include <mutex>
+
+#include <algorithm>
 #include <atomic>
+#include <mutex>
+#include <stdexcept>
+#include <type_traits>
+#include <variant>
 
 // G1 (unitree_hg message set) publishes rt/lowstate under this name, same topic
 // DriverUnitreeG1ArmSDK already subscribes to.
 static const std::string kTopicLowStateG1 = "rt/lowstate";
+
 // H1 (unitree_go message set, per this class's current ROBOT::H1 mapping): the
 // Adorno-Lab team's own internal testing recalled using unitree_go::msg::dds_::LowState_
 // on "rt/lf/lowstate" rather than "rt/lowstate" -- plausibly a legacy topic name tied
@@ -45,6 +49,7 @@ static const std::string kTopicLowStateH1 = "rt/lf/lowstate";
 
 namespace
 {
+
 /**
  * @brief Looks up the motor_state() indices for one limb (or the torso) of one
  *        robot type.
@@ -99,16 +104,43 @@ std::vector<int> limb_indices(const DriverUnitreeLowState::ROBOT& robot,
         // type). Note the different joint counts vs G1: a single combined Ankle
         // joint per leg (5 joints, not 6), a single-joint torso/waist (1 joint, not
         // 3 -- no waist roll/pitch at all in this generation), and no wrist joints
-        // at all (4 joints per arm, not 7).
+        // at all (4 joints per arm, not 7). Index 9 (kNotUsedJoint in motors.hpp) is
+        // deliberately absent from every case below -- it belongs to no limb.
         switch (limb) {
-        case LIMB::LEFT_ARM:  return {16, 17, 18, 19};  // ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow
-        case LIMB::RIGHT_ARM: return {12, 13, 14, 15};  // ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow
-        case LIMB::LEFT_LEG:  return {7, 3, 4, 5, 10};  // HipYaw, HipRoll, HipPitch, Knee, Ankle
-        case LIMB::RIGHT_LEG: return {8, 0, 1, 2, 11};  // HipYaw, HipRoll, HipPitch, Knee, Ankle
-        case LIMB::TORSO:     return {6};               // WaistYaw
+        case LIMB::LEFT_ARM:  return {16, 17, 18, 19}; // ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow
+        case LIMB::RIGHT_ARM: return {12, 13, 14, 15}; // ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow
+        case LIMB::LEFT_LEG:  return {7, 3, 4, 5, 10}; // HipYaw, HipRoll, HipPitch, Knee, Ankle
+        case LIMB::RIGHT_LEG: return {8, 0, 1, 2, 11}; // HipYaw, HipRoll, HipPitch, Knee, Ankle
+        case LIMB::TORSO:     return {6};              // WaistYaw
         }
     }
     throw std::invalid_argument("DriverUnitreeLowState: unknown LIMB");
+}
+
+/**
+ * @brief Extracts a single representative temperature (degrees Celsius) from one
+ *        motor's state, regardless of which of the two message sets it belongs to.
+ * @details unitree_go::msg::dds_::MotorState_::temperature() (ROBOT::H1) returns a
+ *          single uint8_t already, so that branch is a plain cast. unitree_hg::msg::
+ *          dds_::MotorState_::temperature() (ROBOT::G1) returns
+ *          std::array<int16_t, 2> -- two independent sensors whose winding-vs-driver
+ *          identity isn't documented by the SDK (see the class-level @note on
+ *          per-joint temperature in the header for the full rationale) -- so this
+ *          returns the larger of the two, the more conservative reading for thermal
+ *          monitoring.
+ * @tparam MotorStateT Either unitree_hg::msg::dds_::MotorState_ or
+ *         unitree_go::msg::dds_::MotorState_, deduced from @p motor by the caller's
+ *         std::visit.
+ */
+template <typename MotorStateT>
+double extract_temperature(const MotorStateT& motor)
+{
+    if constexpr (std::is_same_v<MotorStateT, unitree_hg::msg::dds_::MotorState_>) {
+        const auto& t = motor.temperature();
+        return static_cast<double>(std::max(t[0], t[1]));
+    } else {
+        return static_cast<double>(motor.temperature());
+    }
 }
 
 } // namespace
@@ -176,8 +208,9 @@ public:
      * @details A member of Impl (rather than a free function) because Impl is a
      *          private nested class: a free function cannot take a reference to it
      *          as a parameter type, even from within this same file.
-     * @tparam FieldFn Callable of signature `float(const MotorState&)`, e.g. a
-     *         lambda calling .q(), .dq(), or .tau_est().
+     * @tparam FieldFn Callable of signature `double(const MotorState&)` (any robot's
+     *         MotorState_, deduced generically), e.g. a lambda calling .q(), .dq(),
+     *         .tau_est(), or extract_temperature().
      * @param robot Which robot's layout to use (forwarded to limb_indices()).
      * @param limb Which limb to extract.
      * @param field The accessor to apply to each of the limb's motors.
@@ -190,10 +223,12 @@ public:
                                        FieldFn&& field) const
     {
         const std::vector<int>& indices = limb_indices(robot, limb);
+
         std::scoped_lock lock(low_state_mutex_);
         if (!has_received_state_) {
             return Eigen::VectorXd(0);
         }
+
         Eigen::VectorXd out(static_cast<Eigen::Index>(indices.size()));
         std::visit([&](const auto& state) {
             const auto& motors = state.motor_state();
@@ -343,8 +378,9 @@ std::size_t DriverUnitreeLowState::num_joints() const
 /**
  * @brief Returns every joint's last measured position.
  * @return A std::vector<double> of joint positions, in radians, indexed as in the
- *         underlying LowState_::motor_state() array. Empty if no rt/lowstate
- *         message has been received yet.
+ *         underlying LowState_::motor_state() array (see the class-level @note on
+ *         full-array joint order). Empty if no rt/lowstate message has been
+ *         received yet.
  */
 std::vector<double> DriverUnitreeLowState::get_joint_positions() const
 {
@@ -366,8 +402,9 @@ std::vector<double> DriverUnitreeLowState::get_joint_positions() const
 /**
  * @brief Returns every joint's last measured velocity.
  * @return A std::vector<double> of joint velocities, in rad/s, indexed as in the
- *         underlying LowState_::motor_state() array. Empty if no rt/lowstate
- *         message has been received yet.
+ *         underlying LowState_::motor_state() array (see the class-level @note on
+ *         full-array joint order). Empty if no rt/lowstate message has been
+ *         received yet.
  */
 std::vector<double> DriverUnitreeLowState::get_joint_velocities() const
 {
@@ -389,8 +426,9 @@ std::vector<double> DriverUnitreeLowState::get_joint_velocities() const
 /**
  * @brief Returns every joint's last estimated torque.
  * @return A std::vector<double> of estimated joint torques, in Nm, indexed as in
- *         the underlying LowState_::motor_state() array. Empty if no rt/lowstate
- *         message has been received yet.
+ *         the underlying LowState_::motor_state() array (see the class-level @note
+ *         on full-array joint order). Empty if no rt/lowstate message has been
+ *         received yet.
  */
 std::vector<double> DriverUnitreeLowState::get_joint_torques() const
 {
@@ -404,6 +442,32 @@ std::vector<double> DriverUnitreeLowState::get_joint_torques() const
         out.resize(motors.size());
         for (std::size_t i = 0; i < motors.size(); ++i) {
             out.at(i) = static_cast<double>(motors.at(i).tau_est());
+        }
+    }, impl_->latest_low_state_);
+    return out;
+}
+
+/**
+ * @brief Returns every joint's last measured temperature.
+ * @return A std::vector<double> of joint temperatures, in degrees Celsius, indexed
+ *         as in the underlying LowState_::motor_state() array (see the class-level
+ *         @note on full-array joint order). For ROBOT::G1 each entry is the larger
+ *         of that joint's two onboard sensor readings -- see the class-level @note
+ *         on per-joint temperature for why. Empty if no rt/lowstate message has been
+ *         received yet.
+ */
+std::vector<double> DriverUnitreeLowState::get_joint_temperatures() const
+{
+    std::scoped_lock lock(impl_->low_state_mutex_);
+    std::vector<double> out;
+    if (!impl_->has_received_state_) {
+        return out;
+    }
+    std::visit([&](const auto& state) {
+        const auto& motors = state.motor_state();
+        out.resize(motors.size());
+        for (std::size_t i = 0; i < motors.size(); ++i) {
+            out.at(i) = extract_temperature(motors.at(i));
         }
     }, impl_->latest_low_state_);
     return out;
@@ -429,12 +493,53 @@ DriverUnitreeLowState::IMUData DriverUnitreeLowState::get_imu_data() const
             out.quaternion.at(static_cast<std::size_t>(i)) = static_cast<double>(imu.quaternion().at(i));
         }
         for (int i = 0; i < 3; ++i) {
-            out.gyroscope.at(static_cast<std::size_t>(i))     = static_cast<double>(imu.gyroscope().at(i));
+            out.gyroscope.at(static_cast<std::size_t>(i)) = static_cast<double>(imu.gyroscope().at(i));
             out.accelerometer.at(static_cast<std::size_t>(i)) = static_cast<double>(imu.accelerometer().at(i));
-            out.rpy.at(static_cast<std::size_t>(i))           = static_cast<double>(imu.rpy().at(i));
+            out.rpy.at(static_cast<std::size_t>(i)) = static_cast<double>(imu.rpy().at(i));
         }
     }, impl_->latest_low_state_);
     return out;
+}
+
+/**
+ * @brief Returns the battery's last reported state of charge.
+ * @details Only unitree_go::msg::dds_::LowState_ (ROBOT::H1) carries a bms_state()
+ *          field; unitree_hg::msg::dds_::LowState_ (ROBOT::G1) has none at all (see
+ *          the header's @note on battery state of charge and this method's own
+ *          @warning). std::visit dispatches on the active alternative of
+ *          latest_low_state_ rather than switching on robot_type_ directly, so this
+ *          stays correct even if the ROBOT-to-message-type mapping in connect() is
+ *          ever changed (see the class-level @warning on the H1 message-set
+ *          ambiguity).
+ * @return State of charge as a percentage in [0, 100].
+ * @throws std::runtime_error if no rt/lowstate message has been received yet, or if
+ *         the active message type has no bms_state_ field (unitree_hg -- i.e.
+ *         ROBOT::G1 under the current mapping).
+ */
+double DriverUnitreeLowState::get_state_of_charge() const
+{
+    std::scoped_lock lock(impl_->low_state_mutex_);
+    if (!impl_->has_received_state_) {
+        throw std::runtime_error("DriverUnitreeLowState::get_state_of_charge: no rt/lowstate message received yet");
+    }
+
+    double soc = 0.0;
+    bool supported = false;
+    std::visit([&](const auto& state) {
+        using StateT = std::decay_t<decltype(state)>;
+        if constexpr (std::is_same_v<StateT, unitree_go::msg::dds_::LowState_>) {
+            soc = static_cast<double>(state.bms_state().soc());
+            supported = true;
+        }
+    }, impl_->latest_low_state_);
+
+    if (!supported) {
+        throw std::runtime_error(
+            "DriverUnitreeLowState::get_state_of_charge: not available for this robot type -- "
+            "the active rt/lowstate message (unitree_hg, i.e. ROBOT::G1 under the current mapping) "
+            "declares no bms_state_ field; see the class-level @note on battery state of charge");
+    }
+    return soc;
 }
 
 // --- Per-limb (and torso) convenience getters ---
@@ -491,4 +596,19 @@ Eigen::VectorXd DriverUnitreeLowState::get_joint_torques(const LIMB& limb) const
 {
     return impl_->extract_limb_field(robot_type_, limb,
                                      [](const auto& motor) { return motor.tau_est(); });
+}
+
+/**
+ * @brief Returns the given limb's (or the torso's) last measured joint temperatures.
+ * @param limb Which limb (or TORSO) to read.
+ * @return An Eigen::VectorXd of joint temperatures, in degrees Celsius, sized and
+ *         ordered per the class-level @note on limb layouts for robot_type_. For
+ *         ROBOT::G1 each entry is the larger of that joint's two onboard sensor
+ *         readings -- see the class-level @note on per-joint temperature for why.
+ *         Empty (size 0) if no rt/lowstate message has been received yet.
+ */
+Eigen::VectorXd DriverUnitreeLowState::get_joint_temperatures(const LIMB& limb) const
+{
+    return impl_->extract_limb_field(robot_type_, limb,
+                                     [](const auto& motor) { return extract_temperature(motor); });
 }
