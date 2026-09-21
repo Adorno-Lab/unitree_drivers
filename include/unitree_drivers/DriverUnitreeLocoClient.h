@@ -63,15 +63,10 @@
  *       (typically the same one a SIGINT handler calls shutdown() on) at construction
  *       time. The background control loop callback polls
  *       shutdown_signaler->should_shutdown() every tick and, the moment it becomes
- *       true, zeroes the target velocity so locomotion stops within one control period
- *       (10 ms) of the signal, without waiting for the owning application to notice
- *       and call deinitialize() itself. The callback deliberately does NOT call
- *       deinitialize() (which stops the control thread via sas::ThreadManager::stop()):
- *       that call blocks on std::thread::join(), and the callback runs ON the control
- *       thread itself, so joining it from there is a self-join deadlock. Actual thread
- *       teardown still happens via deinitialize()/disconnect(), called from the
- *       destructor (or explicitly) on the owning application's thread once its own
- *       loops observe the signal and unwind.
+ *       true, zeroes the target velocity so locomotion stops within one control_period
+ *       (10 ms by default; see the constructor's control_period argument) of the
+ *       signal, without waiting for the owning application to notice and call
+ *       deinitialize() itself. The callback deliberately does NOT call
  */
 class DriverUnitreeLocoClient
 {
