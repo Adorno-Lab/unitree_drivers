@@ -121,11 +121,5 @@ to notice and call `deinitialize()` itself. `DriverUnitreeLowState` accepts and
 validates the same signaler for interface consistency, but has no background
 loop of its own to drive.
 
-Consumers of the *installed* `unitree_drivers` package (via `find_package`)
-need `sas_core`'s headers on their own include path to compile against the
-`ShutdownSignaler`-typed constructors, and need to link `sas_core` themselves
-if they call `shutdown_signaler->shutdown()`/`should_shutdown()` directly --
-neither is provided transitively. Depend on
-[`sas_core`](https://github.com/SmartArmStack/sas_core) the same way this
-project's own `CMakeLists.txt` does (e.g. via `FetchContent`).
+
 
