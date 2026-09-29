@@ -54,6 +54,7 @@ find_package(marinholab_sas_core REQUIRED)
 # ---------------------------------------------------------------------------
 include(cmake/loco_client.cmake)
 include(cmake/g1_arm_sdk.cmake)
+include(cmake/arm_sdk.cmake)
 include(cmake/low_state.cmake)
 include(cmake/low_cmd.cmake)
 
@@ -64,7 +65,7 @@ install(DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(TARGETS loco_client g1_arm_sdk low_state low_cmd
+install(TARGETS loco_client g1_arm_sdk arm_sdk low_state low_cmd
     EXPORT unitree_driversTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -101,6 +102,7 @@ install(FILES
 # target_link_libraries(driver-g1 PRIVATE
 #     unitree_drivers::loco_client
 #     unitree_drivers::g1_arm_sdk
+#     unitree_drivers::arm_sdk
 #     unitree_drivers::low_state
 #     unitree_drivers::low_cmd
 #)
