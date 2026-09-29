@@ -4,7 +4,7 @@
 # No background control loop (see the class's own docs) -- the ShutdownSignaler
 # it takes at construction drives no behavior here -- but its constructor still
 # takes a std::shared_ptr<sas::ShutdownSignaler> for interface consistency with
-# loco_client/g1_arm_sdk.
+# loco_client/arm_sdk.
 add_library(low_state SHARED
     src/DriverUnitreeLowState.cpp
 )

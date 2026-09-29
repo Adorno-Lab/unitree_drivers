@@ -28,7 +28,7 @@ cmake -S . -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr/local
 
-# 2. Build the three shared libraries.
+# 2. Build the shared libraries.
 cmake --build build -j$(nproc)
 
 # 3. Install headers, libraries, and the exported CMake package.
@@ -43,7 +43,7 @@ cmake -S . -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$HOME/opt
 
-# 2. Build the three shared libraries.
+# 2. Build the shared libraries.
 cmake --build build -j$(nproc)
 
 # 3. Install headers, libraries, and the exported CMake package. No sudo needed.
@@ -67,17 +67,26 @@ cmake --install build
 find_package(unitree_drivers REQUIRED)
 target_link_libraries(${YOUR_LIBRARY} PRIVATE
      unitree_drivers::loco_client
-     unitree_drivers::g1_arm_sdk
+     unitree_drivers::arm_sdk
      unitree_drivers::low_state)
 ```
 
 
 ```cpp
 #include <unitree_drivers/DriverUnitreeLocoClient.h>
-#include <unitree_drivers/DriverUnitreeG1ArmSDK.h>
+#include <unitree_drivers/DriverUnitreeArmSDK.h>
 #include <unitree_drivers/DriverUnitreeLowState.h>
 ```
 
+`DriverUnitreeArmSDK` drives the arms and waist through the `rt/arm_sdk` topic with a ramped blend weight, and supports both the G1 and the H1. Pick the robot at construction:
 
+```cpp
+using Arm = DriverUnitreeArmSDK;
+Arm g1_arms(shutdown_signaler, Arm::ROBOT::G1);     // G1: 7 joints per arm, 3 waist joints
+Arm h1_arms(shutdown_signaler, Arm::ROBOT::H1);     // H1: 4 joints per arm, 1 waist joint
 
-
+h1_arms.connect();
+h1_arms.initialize();
+h1_arms.set_target_positions(Arm::LIMB::LEFT_ARM, {0.0, 0.3, 0.0, 0.5}); // size must be get_num_joints(LIMB)
+h1_arms.enable_arm_control();
+```

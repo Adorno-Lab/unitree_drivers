@@ -32,7 +32,7 @@
 #include <variant>
 
 // G1 (unitree_hg message set) publishes rt/lowstate under this name, same topic
-// DriverUnitreeG1ArmSDK already subscribes to.
+// DriverUnitreeArmSDK (ROBOT::G1) also subscribes to.
 static const std::string kTopicLowStateG1 = "rt/lowstate";
 
 // H1 (unitree_go message set, per this class's current ROBOT::H1 mapping): the
@@ -86,7 +86,7 @@ std::vector<int> limb_indices(const DriverUnitreeLowState::ROBOT& robot,
         // G1 (unitree_hg, 35-slot motor_state array). Verified against
         // unitreerobotics/unitree_sdk2's example/g1/low_level/g1_ankle_swing_example.cpp
         // G1JointIndex enum, and cross-checked against this same index set already
-        // baked into DriverUnitreeG1ArmSDK's own kArmJoints array.
+        // baked into DriverUnitreeArmSDK's own G1 joint layout (make_layout()).
         switch (limb) {
         case LIMB::LEFT_ARM:  return {15, 16, 17, 18, 19, 20, 21}; // ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow, WristRoll, WristPitch, WristYaw
         case LIMB::RIGHT_ARM: return {22, 23, 24, 25, 26, 27, 28}; // same 7 joints, right side
@@ -151,7 +151,7 @@ double extract_temperature(const MotorStateT& motor)
  * @details Owns the active ChannelSubscriber (one of two possible concrete message
  *          types, selected at connect() time by ROBOT) and the most recently received
  *          rt/lowstate message, cached by value exactly as received -- mirroring
- *          DriverUnitreeG1ArmSDK's own latest_low_state_ caching style -- rather than
+ *          DriverUnitreeArmSDK's own latest_state caching style -- rather than
  *          eagerly parsed into separate fields on every callback. Every public getter
  *          parses the cached message on demand, under low_state_mutex_, via
  *          std::visit so the same parsing code compiles against both concrete message
@@ -169,7 +169,7 @@ public:
                  unitree::robot::ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_>> lowstate_subscriber_;
 
     // The most recently received rt/lowstate message, cached by value exactly as
-    // received (same style as DriverUnitreeG1ArmSDK::Impl::latest_low_state_), parsed
+    // received (same style as DriverUnitreeArmSDK's Channels::latest_state), parsed
     // on demand by the public getters rather than eagerly on every callback.
     std::variant<unitree_hg::msg::dds_::LowState_, unitree_go::msg::dds_::LowState_> latest_low_state_;
     bool has_received_state_ = false;
@@ -282,7 +282,7 @@ void DriverUnitreeLowState::connect()
 {
     // Precondition: unitree::robot::ChannelFactory::Instance()->Init(domain_id, network_interface)
     // must already have been called by the owning driver, same as for the aggregated
-    // DriverUnitreeLocoClient and DriverUnitreeG1ArmSDK.
+    // DriverUnitreeLocoClient and DriverUnitreeArmSDK.
     //
     // Note the topic name itself is robot-specific, not just the message type: G1
     // publishes on "rt/lowstate", but H1 (per this class's current ROBOT::H1 mapping

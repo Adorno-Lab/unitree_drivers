@@ -33,7 +33,7 @@
  * @brief Publishes to the Unitree SDK's low-level command topic (rt/lowcmd), letting a
  *        caller drive every joint's PD target (q, dq, kp, kd) and feedforward torque
  *        directly -- bypassing the robot's onboard locomotion controller and
- *        DriverUnitreeG1ArmSDK's weight-blend mechanism entirely -- behind a single,
+ *        DriverUnitreeArmSDK's weight-blend mechanism entirely -- behind a single,
  *        robot-agnostic interface.
  *
  * @details Selecting a ROBOT at construction time picks which concrete DDS message
@@ -58,7 +58,7 @@
  *          swap DriverUnitreeLowState's own docs describe for its ROBOT::H1 case.
  *
  * @warning Direct rt/lowcmd control bypasses every safety net the onboard
- *          locomotion controller and DriverUnitreeG1ArmSDK's weight-blend mechanism
+ *          locomotion controller and DriverUnitreeArmSDK's weight-blend mechanism
  *          provide (balance, joint limits, gradual engagement). There is no ramp, no
  *          seeding from the measured pose, and no blend weight here: publish() sends
  *          exactly the joint commands most recently buffered, verbatim, the instant
@@ -99,7 +99,7 @@
  *          note exists only so the asymmetry between the two ROBOT values' hardware
  *          requirements is documented somewhere a reader of this header will see it.
  *
- * @note Unlike DriverUnitreeG1ArmSDK, this class has no background control loop and
+ * @note Unlike DriverUnitreeArmSDK, this class has no background control loop and
  *       does not itself call ChannelPublisher::Write() on a timer: it only buffers
  *       whatever per-joint commands were most recently set via set_joint_command() /
  *       set_limb_command(), and publish() must be called explicitly, at whatever rate
@@ -115,13 +115,13 @@
  * @note shutdown_signaler is accepted and validated at construction, and consulted by
  *       publish() (see its own docs) as a minimal safety measure, but this class has
  *       no background loop of its own to poll it from every tick the way
- *       DriverUnitreeG1ArmSDK's arm_control_loop_callback() does -- it is only ever
+ *       DriverUnitreeArmSDK's arm_control_loop_callback() does -- it is only ever
  *       checked at the moment publish() is called.
  *
  * @note This class assumes unitree::robot::ChannelFactory::Instance()->Init(domain_id,
  *       network_interface) has already been called by the owning driver before
  *       connect() is invoked, exactly like DriverUnitreeLocoClient,
- *       DriverUnitreeG1ArmSDK, and DriverUnitreeLowState.
+ *       DriverUnitreeArmSDK, and DriverUnitreeLowState.
  *
  * @note Limb layouts (set_limb_command(LIMB, ...) / num_joints(LIMB)): the
  *       motor_cmd() indices belonging to each LIMB, and how many joints each maps to,
@@ -223,7 +223,7 @@ public:
 
     /// Marks this object as no longer initialized. No blocking behavior and nothing
     /// is published: there is no control loop to ramp down (see the class-level
-    /// @note) -- unlike DriverUnitreeG1ArmSDK::deinitialize(), this does not publish a
+    /// @note) -- unlike DriverUnitreeArmSDK::deinitialize(), this does not publish a
     /// disabling command. Callers that need the robot left in a known-safe state
     /// should explicitly buffer and publish() a disabled command before calling this.
     void deinitialize();

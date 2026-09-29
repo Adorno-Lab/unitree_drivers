@@ -248,7 +248,7 @@ void DriverUnitreeLowCmd::connect()
 {
     // Precondition: unitree::robot::ChannelFactory::Instance()->Init(domain_id, network_interface)
     // must already have been called by the owning driver, same as for
-    // DriverUnitreeLocoClient, DriverUnitreeG1ArmSDK, and DriverUnitreeLowState.
+    // DriverUnitreeLocoClient, DriverUnitreeArmSDK, and DriverUnitreeLowState.
     switch (robot_type_) {
     case ROBOT::G1:
     {

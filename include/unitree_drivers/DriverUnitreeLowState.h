@@ -56,8 +56,10 @@
  *          unitreerobotics/unitree_sdk2 itself, not just in this class:
  *          example/h1/low_level/humanoid.hpp subscribes to rt/lowstate as
  *          unitree_go::msg::dds_::LowState_ (matching this class's current
- *          ROBOT::H1 mapping, and matching DriverUnitreeG1ArmSDK's own documented
- *          split for rt/lowcmd), while example/h1/high_level/h1_arm_sdk_dds_example.cpp,
+ *          ROBOT::H1 mapping, and matching DriverUnitreeArmSDK's ROBOT::H1 mode,
+ *          which publishes rt/arm_sdk as unitree_go::msg::dds_::LowCmd_ and reads
+ *          unitree_go::msg::dds_::LowState_ on rt/lf/lowstate), while
+ *          example/h1/high_level/h1_arm_sdk_dds_example.cpp,
  *          h1_27dof_example.cpp, and h1_2_ankle_track.cpp -- despite none but the
  *          last being named "h1_2" -- all subscribe to rt/lowstate as
  *          unitree_hg::msg::dds_::LowState_ instead, identically to G1. This almost
@@ -79,7 +81,7 @@
  *          hardware. Treat it as the best available lead, not a confirmed topic
  *          name, and verify it alongside the message-type question above.
  *
- * @note Unlike DriverUnitreeLocoClient and DriverUnitreeG1ArmSDK, this class has no
+ * @note Unlike DriverUnitreeLocoClient and DriverUnitreeArmSDK, this class has no
  *       background control loop: it only ever reads rt/lowstate, so there is nothing
  *       for it to publish or ramp down. The latest received message is cached and
  *       parsed on demand by the getters below, entirely on whichever thread the
@@ -90,7 +92,7 @@
  *
  * @note This class assumes unitree::robot::ChannelFactory::Instance()->Init(domain_id,
  *       network_interface) has already been called by the owning driver before connect()
- *       is invoked, exactly like DriverUnitreeLocoClient and DriverUnitreeG1ArmSDK.
+ *       is invoked, exactly like DriverUnitreeLocoClient and DriverUnitreeArmSDK.
  *
  * @note Limb layouts (get_joint_positions(LIMB)/get_joint_velocities(LIMB)/
  *       get_joint_torques(LIMB)/get_joint_temperatures(LIMB)): which motor_state()
@@ -110,7 +112,7 @@
  *         unitreerobotics/unitree_sdk2's own
  *         example/g1/low_level/g1_ankle_swing_example.cpp G1JointIndex enum, and
  *         cross-checked against this same index set already baked into
- *         DriverUnitreeG1ArmSDK's own kArmJoints array (whose ordering is
+ *         DriverUnitreeArmSDK's own G1 joint layout (whose ordering is
  *         left-arm(7) + right-arm(7) + waist(3), i.e. this same TORSO index set).
  *       - ROBOT::H1: this class's ROBOT::H1 subscribes to rt/lowstate as
  *         unitree_go::msg::dds_::LowState_ (see the @warning above), so the limb
