@@ -141,6 +141,10 @@ public:
     std::vector<float> target_;
     std::vector<float> current_;
     std::vector<float> desired_;
+    // Per limb (LIMB order): whether set_target_positions() has been called for it. A limb
+    // with no target yet holds its measured pose on engage instead of tracking toward the
+    // all-zero initial target_. Guarded by data_mutex_.
+    std::array<bool,3> target_set_{};
 
     // rt/arm_sdk blend/ramp parameters. See official arm_sdk examples (G1 and H1).
     float arm_weight_{0.0f};
@@ -270,6 +274,14 @@ public:
             if (enabled && !arm_control_seeded_) {
                 // Seed the tracker from measured state so engaging never snaps the arm.
                 desired_ = current_;
+                // Limbs that were never given a target hold where they are.
+                for (const LIMB limb : {LIMB::LEFT_ARM, LIMB::RIGHT_ARM, LIMB::WAIST}) {
+                    if (!target_set_.at(static_cast<std::size_t>(limb))) {
+                        const std::size_t off = layout_.offset(limb);
+                        for (std::size_t i = off; i < off + layout_.count(limb); ++i)
+                            target_.at(i) = current_.at(i);
+                    }
+                }
                 arm_control_seeded_ = true;
             }
             if (!enabled) {
@@ -492,6 +504,7 @@ void DriverUnitreeArmSDK::set_target_positions(const LIMB& limb, const std::vect
     const std::size_t off = impl_->layout_.offset(limb);
     for (std::size_t i = 0; i < n; ++i)
         impl_->target_.at(off + i) = static_cast<float>(target_positions.at(i));
+    impl_->target_set_.at(static_cast<std::size_t>(limb)) = true;
 }
 
 std::vector<double> DriverUnitreeArmSDK::get_positions(const LIMB& limb)

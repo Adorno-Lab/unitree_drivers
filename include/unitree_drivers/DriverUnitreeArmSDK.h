@@ -12,7 +12,7 @@
  *        parameter.
  *
  * @details Selecting a ROBOT at construction time picks the DDS message set, the
- *          rt/lowstate topic name, and the joint layout used internally; every public
+ *          state topic name, and the joint layout used internally; every public
  *          method then behaves identically for both robots. Both robots use the same
  *          mechanism: rt/arm_sdk carries per-joint PD targets for the arm/waist joints,
  *          plus a blend weight (0 = the onboard controller owns the arms, 1 = these
@@ -26,7 +26,7 @@
  *          | blend-weight motor slot | 29 | 9 |
  *          | joints per arm | 7 | 4 (ShoulderPitch/Roll/Yaw, Elbow; no wrist) |
  *          | waist joints | 3 (Yaw, Roll, Pitch) | 1 (Yaw) |
- *          | joint-limit clamping of targets | none (as before) | yes, per-joint limits with a 0.15 rad safety margin |
+ *          | joint-limit clamping of targets | none | yes, per-joint limits with a 0.15 rad safety margin |
  *
  *          The H1 layout, topic names, message types and joint limits are taken from
  *          the Adorno-Lab sas_robot_driver_unitree_h1 driver (DriverUnitreeH1), which
@@ -46,6 +46,12 @@
  *          clear of obstacles/people while engaging or disengaging arm control.
  *          Engaging is refused (nothing is published) until at least one state message
  *          has been received, so the tracker is never seeded from an all-zero pose.
+ *          A limb that has not been given a target via set_target_positions() holds
+ *          its measured pose on engage, rather than tracking toward the all-zero
+ *          initial target; it keeps doing so on every later engage until a target is
+ *          set for it. On H1 the held pose is clamped to the joint limits like any
+ *          other target, so a joint resting inside the 0.15 rad safety margin is moved
+ *          to the edge of that margin (at the tracker's 0.5 rad/s rate).
  *
  * @note Both robots expose rt/arm_sdk and the weight-blend mechanism (see the table
  *       above). The H1 arm controller in Unitree's xr_teleoperate publishes to rt/lowcmd
@@ -172,6 +178,8 @@ public:
      *        order (arms: ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow[, WristRoll,
      *        WristPitch, WristYaw on G1]; waist: Yaw[, Roll, Pitch on G1]).
      * @throws std::invalid_argument if the size does not match get_num_joints(limb).
+     * @note Until this is called for a limb, that limb holds its measured pose while
+     *       arm control is engaged (see the class-level @warning).
      * @note On H1, targets are clamped to the joint limits (with a safety margin)
      *       before being tracked, so get_desired_positions() converges to the clamped
      *       value, not the requested one.
