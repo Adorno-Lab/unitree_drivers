@@ -5,7 +5,7 @@
 # explicitly by the owning control loop, and the ShutdownSignaler it takes at
 # construction is only consulted from publish() itself, not polled by a loop of
 # its own here. Its constructor still takes a std::shared_ptr<sas::ShutdownSignaler>
-# for interface consistency with loco_client/g1_arm_sdk/low_state, so
+# for interface consistency with loco_client/arm_sdk/low_state, so
 # <marinholab/sas/core/sas_shutdown_signaler.hpp> is pulled into this library's
 # installed public header too -- marinholab::sas::core is therefore a PUBLIC
 # usage-requirement dependency, same as the other three libraries in this project
@@ -13,7 +13,7 @@
 # now rather than a $<BUILD_INTERFACE:...>-only one).
 # unitree_sdk2 is only used in the .cpp (IDL message types, ChannelPublisher), so
 # it's PRIVATE here -- this library's public header (DriverUnitreeLowCmd.h) has no
-# unitree_sdk2 types in its interface, unlike loco_client/g1_arm_sdk.
+# unitree_sdk2 types in its interface, unlike loco_client/arm_sdk.
 add_library(low_cmd SHARED
     src/DriverUnitreeLowCmd.cpp
 )
