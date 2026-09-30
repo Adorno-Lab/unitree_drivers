@@ -19,6 +19,10 @@
 #   Author: - Juan Jose Quiroz Omana (email: juanjose.quirozomana@manchester.ac.uk)
 #           - Developed with the assistance of Claude (Anthropic).
 #
+#   Acknowledgement: The H1 support in this class is based on the developments by
+#                    Daniel S. J. Derwent (email: daniel.derwent@manchester.ac.uk)
+#                    in https://github.com/Adorno-Lab/sas_robot_driver_unitree_h1
+#
 # ################################################################
 */
 
