@@ -90,3 +90,8 @@ h1_arms.initialize();
 h1_arms.set_target_positions(Arm::LIMB::LEFT_ARM, {0.0, 0.3, 0.0, 0.5}); // size must be get_num_joints(LIMB)
 h1_arms.enable_arm_control();
 ```
+
+# Intended use in SAS driver classes
+
+<img width="800" alt="software_design" src="https://github.com/user-attachments/assets/87c7a0cc-b575-489c-bf20-3517e48cc7f0" />
+
