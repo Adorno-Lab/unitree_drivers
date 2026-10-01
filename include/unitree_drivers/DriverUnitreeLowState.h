@@ -42,7 +42,7 @@
  * @details Selecting a ROBOT at construction time picks which concrete DDS message
  *          type rt/lowstate is subscribed to: G1 publishes it as
  *          unitree_hg::msg::dds_::LowState_ (confirmed against
- *          unitreerobotics/unitree_sdk2's own example/g1/low_level/*.cpp, all of
+ *          unitreerobotics/unitree_sdk2's own example/g1/low_level/\*.cpp, all of
  *          which include <unitree/idl/hg/LowState_.hpp>). The two message types have
  *          differently-sized motor_state arrays (35 slots for the HG series vs 20 for
  *          the GO2 series, per include/unitree/idl/{hg,go2}/LowState_.hpp in that
