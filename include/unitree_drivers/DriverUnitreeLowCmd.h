@@ -281,13 +281,6 @@ public:
     MotorCommand get_joint_command(std::size_t index) const;
 
     /**
-     * @brief Sets the ankle control coordinate mode (unitree_hg's mode_pr field).
-     * @param mode PR (independent Pitch/Roll) or AB (coupled linkage A/B). Buffered
-     *        the same way as MotorCommand fields: takes effect on the next publish().
-     * @note No-op for ROBOT::H1 -- see the class-level @details and ANKLE_MODE's own
-     *       docs.
-     */
-    /**
      * @brief Buffers target positions for every joint in one limb (or the torso),
      *        touching only their q fields.
      * @param limb Which limb (or TORSO) to command.
@@ -303,6 +296,13 @@ public:
      */
     void set_joint_positions(const LIMB& limb, const Eigen::VectorXd& positions);
 
+    /**
+     * @brief Sets the ankle control coordinate mode (unitree_hg's mode_pr field).
+     * @param mode PR (independent Pitch/Roll) or AB (coupled linkage A/B). Buffered
+     *        the same way as MotorCommand fields: takes effect on the next publish().
+     * @note No-op for ROBOT::H1 -- see the class-level @details and ANKLE_MODE's own
+     *       docs.
+     */
     void set_ankle_mode(const ANKLE_MODE& mode);
 
     /**

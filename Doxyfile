@@ -1,0 +1,53 @@
+# Doxygen configuration for the project documentation website.
+#
+# Only the settings that differ from Doxygen's defaults are listed here; any
+# tag not set falls back to its default. Run `doxygen -x Doxyfile` to see the
+# full effective configuration.
+#
+# Build locally with:   doxygen
+# Output:               build/docs/index.html
+#
+# The GitHub Actions workflow in .github/workflows/doxygen-pages.yml runs the
+# same command and publishes build/docs to GitHub Pages.
+
+#---------------------------------------------------------------------------
+# Project
+#---------------------------------------------------------------------------
+PROJECT_NAME           = "unitree_drivers"
+PROJECT_BRIEF          = "Robot-agnostic pImpl wrappers around the Unitree SDK"
+OUTPUT_DIRECTORY       = build
+HTML_OUTPUT            = docs
+
+#---------------------------------------------------------------------------
+# Input
+#---------------------------------------------------------------------------
+INPUT                  = README.md include src
+RECURSIVE              = YES
+FILE_PATTERNS          = *.h *.hpp *.cpp *.md
+USE_MDFILE_AS_MAINPAGE = README.md
+IMAGE_PATH             = design
+STRIP_FROM_PATH        = .
+STRIP_FROM_INC_PATH    = include
+
+#---------------------------------------------------------------------------
+# Extraction
+#---------------------------------------------------------------------------
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+# The pImpl structs are implementation details, not part of the public API.
+EXCLUDE_SYMBOLS        = *::Impl
+
+#---------------------------------------------------------------------------
+# Output
+#---------------------------------------------------------------------------
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+SOURCE_BROWSER         = YES
+
+#---------------------------------------------------------------------------
+# Warnings
+#---------------------------------------------------------------------------
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
