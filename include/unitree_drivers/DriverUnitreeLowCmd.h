@@ -49,7 +49,7 @@
  *          class's current ROBOT::H1 mapping -- same caveat as
  *          DriverUnitreeLowState::ROBOT::H1: genuinely ambiguous in
  *          unitreerobotics/unitree_sdk2 itself, not just here; see that class's
- *          @warning on the H1 message-set split -- as unitree_go::msg::dds_::LowCmd_
+ *          warning on the H1 message-set split -- as unitree_go::msg::dds_::LowCmd_
  *          (20 motor_cmd() slots). Both message types are published on the same topic
  *          name, "rt/lowcmd" (per unitreerobotics/xr_teleoperate's own
  *          kTopicLowCommand_Debug, used identically for G1, H1-2, and H1), unlike
@@ -129,7 +129,7 @@
  * @note Limb layouts (set_limb_command(LIMB, ...) / num_joints(LIMB)): the
  *       motor_cmd() indices belonging to each LIMB, and how many joints each maps to,
  *       are identical to -- and must be kept in sync with -- DriverUnitreeLowState's
- *       own class-level @note on limb layouts; see that class for the exact indices,
+ *       own class-level note on limb layouts; see that class for the exact indices,
  *       joint names, and their provenance. The index table is duplicated in this
  *       class's .cpp (rather than shared) purely so this class remains a standalone
  *       translation unit with no compile-time dependency on DriverUnitreeLowState;
@@ -150,7 +150,7 @@ public:
     /**
      * @brief Identifies one limb's (or the torso's) group of joints within the
      *        underlying rt/lowcmd motor_cmd() array.
-     * @note Mirrors DriverUnitreeLowState::LIMB exactly; see the class-level @note on
+     * @note Mirrors DriverUnitreeLowState::LIMB exactly; see the class-level note on
      *       limb layouts for the exact indices and their provenance. TORSO refers to
      *       the waist joint(s) (there is no separate "head" or other body segment
      *       addressed by this enum).
@@ -217,7 +217,7 @@ public:
 
     /**
      * @brief Marks this object ready for use.
-     * @details There is no background loop to start (see the class-level @note); this
+     * @details There is no background loop to start (see the class-level note); this
      *          only flips a flag, mainly so this class's lifecycle shape matches the
      *          other sub-drivers DriverUnitreeG1 aggregates.
      * @throws std::runtime_error if connect() has not been called yet.
@@ -236,7 +236,7 @@ public:
     void disconnect();
 
     /// Number of motor_cmd() slots in the underlying rt/lowcmd message for this robot
-    /// (35 for G1, 20 for H1 -- see the class-level @details).
+    /// (35 for G1, 20 for H1 -- see the class-level details).
     std::size_t num_joints() const;
 
     /// Number of joints in the given limb (or TORSO) for this instance's robot type
@@ -249,7 +249,7 @@ public:
     /**
      * @brief Buffers one joint's command by its absolute motor_cmd() index.
      * @param index Absolute index into the underlying motor_cmd() array (0-based; see
-     *        DriverUnitreeLowState's class-level @note on limb layouts for how
+     *        DriverUnitreeLowState's class-level note on limb layouts for how
      *        indices map to physical joints for this instance's robot type).
      * @param command The PD target, feedforward torque, and enable flag to buffer.
      * @throws std::out_of_range if index >= num_joints().
@@ -264,7 +264,7 @@ public:
      * @param limb Which limb (or TORSO) to command.
      * @param commands One MotorCommand per joint in @p limb, in the same physical
      *        joint order as DriverUnitreeLowState's per-limb getters -- see that
-     *        class's class-level @note on limb layouts.
+     *        class's class-level note on limb layouts.
      * @throws std::invalid_argument if commands.size() != num_joints(limb).
      */
     void set_limb_command(const LIMB& limb, const std::vector<MotorCommand>& commands);
@@ -286,7 +286,7 @@ public:
      * @param limb Which limb (or TORSO) to command.
      * @param positions Target position, in radians, for each joint in @p limb, in
      *        the same physical joint order as DriverUnitreeLowState's per-limb
-     *        getters -- see that class's class-level @note on limb layouts.
+     *        getters -- see that class's class-level note on limb layouts.
      * @details Unlike set_limb_command(), this leaves each joint's dq/tau/kp/kd/
      *          enable fields untouched at whatever was most recently buffered for
      *          them (or their MotorCommand defaults, if never set) -- only q is
@@ -300,7 +300,7 @@ public:
      * @brief Sets the ankle control coordinate mode (unitree_hg's mode_pr field).
      * @param mode PR (independent Pitch/Roll) or AB (coupled linkage A/B). Buffered
      *        the same way as MotorCommand fields: takes effect on the next publish().
-     * @note No-op for ROBOT::H1 -- see the class-level @details and ANKLE_MODE's own
+     * @note No-op for ROBOT::H1 -- see the class-level details and ANKLE_MODE's own
      *       docs.
      */
     void set_ankle_mode(const ANKLE_MODE& mode);
@@ -309,10 +309,10 @@ public:
      * @brief Sets the machine-identifier field real G1 hardware requires every
      *        published LowCmd_ to echo back (unitree_hg's mode_machine field).
      * @param mode_machine The value to echo, obtained from the robot's own
-     *        LowState_::mode_machine() -- see the class-level @warning: this must be
+     *        LowState_::mode_machine() -- see the class-level warning: this must be
      *        sourced from the live rt/lowstate stream, not guessed or left at its
      *        default of 0, or real G1 hardware will ignore published commands.
-     * @note No-op for ROBOT::H1 -- see the class-level @details and @warning.
+     * @note No-op for ROBOT::H1 -- see the class-level details and warning.
      */
     void set_mode_machine(std::uint8_t mode_machine);
 
@@ -322,7 +322,7 @@ public:
      * @return false, without publishing anything, if
      *         shutdown_signaler->should_shutdown() is true -- a minimal safety
      *         measure, since this class has no background loop of its own to react to
-     *         the signal otherwise (see the class-level @note). true if the publish
+     *         the signal otherwise (see the class-level note). true if the publish
      *         call was made.
      * @throws std::runtime_error if connect()/initialize() have not been called yet.
      */

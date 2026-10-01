@@ -75,7 +75,7 @@
  *          ROBOT::H1 readings from this class; if it turns out wrong for your unit,
  *          swap the ROBOT::H1 case in the .cpp to unitree_hg::msg::dds_::LowState_
  *          instead -- and note that doing so would also flip get_state_of_charge()'s
- *          availability (see its own @warning below).
+ *          availability (see its own warning below).
  *
  * @warning The topic name for ROBOT::H1 is a second, independent source of
  *          uncertainty on top of the message-type ambiguity above: this class
@@ -119,7 +119,7 @@
  *         DriverUnitreeArmSDK's own G1 joint layout (whose ordering is
  *         left-arm(7) + right-arm(7) + waist(3), i.e. this same TORSO index set).
  *       - ROBOT::H1: this class's ROBOT::H1 subscribes to rt/lowstate as
- *         unitree_go::msg::dds_::LowState_ (see the @warning above), so the limb
+ *         unitree_go::msg::dds_::LowState_ (see the warning above), so the limb
  *         indices used here match that same generation's layout, verified against
  *         unitreerobotics/unitree_sdk2's example/h1/low_level/motors.hpp JointIndex
  *         enum (the header used by example/h1/low_level/humanoid.hpp, which
@@ -130,7 +130,7 @@
  *         (a single joint -- this generation has no waist roll/pitch at all),
  *         LEFT_ARM = {ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow} (4 joints
  *         -- no wrist joints at all in this generation), RIGHT_ARM = same 4 joints
- *         on the right. If the message-set ambiguity in the @warning above turns
+ *         on the right. If the message-set ambiguity in the warning above turns
  *         out to resolve the other way for your specific H1 hardware/firmware
  *         (i.e. it actually publishes unitree_hg::msg::dds_::LowState_), these
  *         indices would need to change too -- to the H1-2/27-DoF layout in
@@ -190,7 +190,7 @@
  *         of going through this method.
  *
  * @note Battery state of charge (get_state_of_charge()): only available for
- *       ROBOT::H1. See that method's own @warning for why G1 cannot support it from
+ *       ROBOT::H1. See that method's own warning for why G1 cannot support it from
  *       rt/lowstate at all.
  */
 class DriverUnitreeLowState
@@ -209,7 +209,7 @@ public:
      *
      * @note Which motor_state() indices -- and how many joints -- each entry maps to
      *       is robot-specific and is looked up internally from robot_type_; see the
-     *       class-level @note on limb layouts for the exact indices and their
+     *       class-level note on limb layouts for the exact indices and their
      *       provenance. TORSO refers to the waist joint(s) (there is no separate
      *       "head" or other body segment addressed by this enum).
      */
@@ -254,7 +254,7 @@ public:
 
     /**
      * @brief Marks this object ready for use.
-     * @details There is no background loop to start (see the class-level @note); this
+     * @details There is no background loop to start (see the class-level note); this
      *          only flips a flag, mainly so this class's lifecycle shape matches the
      *          other sub-drivers DriverUnitreeG1 aggregates.
      * @throws std::runtime_error if connect() has not been called yet.
@@ -262,7 +262,7 @@ public:
     void initialize();
 
     /// Marks this object as no longer initialized. No blocking behavior: there is no
-    /// control loop or publisher to ramp down (see the class-level @note).
+    /// control loop or publisher to ramp down (see the class-level note).
     void deinitialize();
 
     /// Unsubscribes from rt/lowstate. Calls deinitialize() first if still initialized.
@@ -273,25 +273,25 @@ public:
     std::size_t num_joints() const;
 
     /// Returns every joint's last measured position, in radians, indexed as in the
-    /// underlying LowState_::motor_state() array. See the class-level @note on
+    /// underlying LowState_::motor_state() array. See the class-level note on
     /// full-array joint order for what each index means for this instance's robot
     /// type. Empty if no message has been received yet.
     std::vector<double> get_joint_positions() const;
 
     /// Returns every joint's last measured velocity, in rad/s. Same indexing as
-    /// get_joint_positions(); see the class-level @note on full-array joint order.
+    /// get_joint_positions(); see the class-level note on full-array joint order.
     /// Empty if no message has been received yet.
     std::vector<double> get_joint_velocities() const;
 
     /// Returns every joint's last estimated torque, in Nm. Same indexing as
-    /// get_joint_positions(); see the class-level @note on full-array joint order.
+    /// get_joint_positions(); see the class-level note on full-array joint order.
     /// Empty if no message has been received yet.
     std::vector<double> get_joint_torques() const;
 
     /// Returns every joint's last measured temperature, in degrees Celsius. Same
-    /// indexing as get_joint_positions(); see the class-level @note on full-array
+    /// indexing as get_joint_positions(); see the class-level note on full-array
     /// joint order. For ROBOT::G1, this is the larger of the joint's two onboard
-    /// sensor readings -- see the class-level @note on per-joint temperature for why.
+    /// sensor readings -- see the class-level note on per-joint temperature for why.
     /// Empty if no message has been received yet.
     std::vector<double> get_joint_temperatures() const;
 
@@ -311,7 +311,7 @@ public:
      *          isn't a gap in this class, it's absent from the message itself. If
      *          your G1 exposes battery state on some other topic, reading it is out
      *          of scope for this class, which only ever reads rt/lowstate.
-     * @warning If the ROBOT::H1 message-type mapping in the class-level @warning
+     * @warning If the ROBOT::H1 message-type mapping in the class-level warning
      *          above ever needs to flip to unitree_hg::msg::dds_::LowState_ for your
      *          hardware/firmware, this method would stop working for ROBOT::H1 too,
      *          for the same reason it doesn't work for ROBOT::G1 today.
@@ -336,7 +336,7 @@ public:
     std::size_t num_joints(const LIMB& limb) const;
 
     /// Returns the given limb's (or the torso's) last measured joint positions, in
-    /// radians, ordered as documented in the class-level @note on limb layouts.
+    /// radians, ordered as documented in the class-level note on limb layouts.
     Eigen::VectorXd get_joint_positions(const LIMB& limb) const;
 
     /// Returns the given limb's (or the torso's) last measured joint velocities, in rad/s.
@@ -347,6 +347,6 @@ public:
 
     /// Returns the given limb's (or the torso's) last measured joint temperatures, in
     /// degrees Celsius. For ROBOT::G1, each entry is the larger of that joint's two
-    /// onboard sensor readings -- see the class-level @note on per-joint temperature.
+    /// onboard sensor readings -- see the class-level note on per-joint temperature.
     Eigen::VectorXd get_joint_temperatures(const LIMB& limb) const;
 };

@@ -359,7 +359,7 @@ void DriverUnitreeLocoClient::disconnect()
  * @brief Queries the robot's current locomotion FSM state ID.
  * @return The FSM ID as reported by the SDK.
  * @warning The integer's meaning is robot- and firmware-specific. See the class-level
- *          @warning above before interpreting this value.
+ *          warning above before interpreting this value.
  */
 int DriverUnitreeLocoClient::get_fsm_id() const
 {
@@ -440,7 +440,7 @@ std::vector<double> DriverUnitreeLocoClient::get_phase() const
  *          (sometimes opposite, e.g. "stand up" vs "squat") behaviors between G1 and
  *          H1, and to shift meaning across G1 firmware revisions. Always check the
  *          FSM ID against the SDK headers and firmware actually running on the target
- *          robot before calling this. See the class-level @warning for details.
+ *          robot before calling this. See the class-level warning for details.
  */
 void DriverUnitreeLocoClient::set_fsm_id(const int& fsm_id)
 {
@@ -450,7 +450,7 @@ void DriverUnitreeLocoClient::set_fsm_id(const int& fsm_id)
 /**
  * @brief Sets the balance mode.
  * @param balance_mode Robot-specific balance mode identifier.
- * @warning Verify against the installed SDK/firmware; see the class-level @warning.
+ * @warning Verify against the installed SDK/firmware; see the class-level warning.
  */
 void DriverUnitreeLocoClient::set_balance_mode(const int& balance_mode)
 {
