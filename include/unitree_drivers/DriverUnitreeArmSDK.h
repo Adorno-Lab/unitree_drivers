@@ -207,7 +207,7 @@ public:
      *        WristPitch, WristYaw on G1]; waist: Yaw[, Roll, Pitch on G1]).
      * @throws std::invalid_argument if the size does not match get_num_joints(limb).
      * @note Until this is called for a limb, that limb holds its measured pose while
-     *       arm control is engaged (see the class-level @warning).
+     *       arm control is engaged (see the class-level warning).
      * @note On H1, targets are clamped to the joint limits (with a safety margin)
      *       before being tracked, so get_desired_positions() converges to the clamped
      *       value, not the requested one.

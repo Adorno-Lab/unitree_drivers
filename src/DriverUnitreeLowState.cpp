@@ -73,7 +73,7 @@ namespace
  * @param robot Which robot's layout to use.
  * @param limb Which limb (or TORSO) to return indices for.
  * @return The motor_state() indices belonging to @p limb under @p robot 's layout,
- *         in physical joint order (see the class-level @note on limb layouts in the
+ *         in physical joint order (see the class-level note on limb layouts in the
  *         header for the exact indices, joint names, and their provenance).
  * @throws std::invalid_argument if @p limb doesn't match any known enumerator. This
  *         branch is currently unreachable given LIMB's five enumerators are all
@@ -128,7 +128,7 @@ std::vector<int> limb_indices(const DriverUnitreeLowState::ROBOT& robot,
  *          single uint8_t already, so that branch is a plain cast. unitree_hg::msg::
  *          dds_::MotorState_::temperature() (ROBOT::G1) returns
  *          std::array<int16_t, 2> -- two independent sensors whose winding-vs-driver
- *          identity isn't documented by the SDK (see the class-level @note on
+ *          identity isn't documented by the SDK (see the class-level note on
  *          per-joint temperature in the header for the full rationale) -- so this
  *          returns the larger of the two, the more conservative reading for thermal
  *          monitoring.
@@ -249,7 +249,7 @@ public:
  * @brief Constructs the wrapper. No network I/O happens here; see connect().
  * @param shutdown_signaler Shared sas::ShutdownSignaler. Validated for consistency
  *        with the other sub-drivers but not used to drive any behavior in this class
- *        (see the class-level @note in the header).
+ *        (see the class-level note in the header).
  * @param robot_type Which rt/lowstate message type to subscribe to. Fixed for the
  *        lifetime of this object (robot_type_ is const) -- construct a new instance
  *        if you need to talk to a different robot type.
@@ -325,7 +325,7 @@ void DriverUnitreeLowState::connect()
 
 /**
  * @brief Marks this object ready for use.
- * @details There is no background loop to start (see the class-level @note); this
+ * @details There is no background loop to start (see the class-level note); this
  *          only flips a flag.
  * @throws std::runtime_error if connect() has not been called yet.
  */
@@ -340,7 +340,7 @@ void DriverUnitreeLowState::initialize()
 /**
  * @brief Marks this object as no longer initialized.
  * @details No blocking behavior: there is no control loop or publisher to ramp down
- *          (see the class-level @note).
+ *          (see the class-level note).
  */
 void DriverUnitreeLowState::deinitialize()
 {
@@ -382,7 +382,7 @@ std::size_t DriverUnitreeLowState::num_joints() const
 /**
  * @brief Returns every joint's last measured position.
  * @return A std::vector<double> of joint positions, in radians, indexed as in the
- *         underlying LowState_::motor_state() array (see the class-level @note on
+ *         underlying LowState_::motor_state() array (see the class-level note on
  *         full-array joint order). Empty if no rt/lowstate message has been
  *         received yet.
  */
@@ -406,7 +406,7 @@ std::vector<double> DriverUnitreeLowState::get_joint_positions() const
 /**
  * @brief Returns every joint's last measured velocity.
  * @return A std::vector<double> of joint velocities, in rad/s, indexed as in the
- *         underlying LowState_::motor_state() array (see the class-level @note on
+ *         underlying LowState_::motor_state() array (see the class-level note on
  *         full-array joint order). Empty if no rt/lowstate message has been
  *         received yet.
  */
@@ -430,7 +430,7 @@ std::vector<double> DriverUnitreeLowState::get_joint_velocities() const
 /**
  * @brief Returns every joint's last estimated torque.
  * @return A std::vector<double> of estimated joint torques, in Nm, indexed as in
- *         the underlying LowState_::motor_state() array (see the class-level @note
+ *         the underlying LowState_::motor_state() array (see the class-level note
  *         on full-array joint order). Empty if no rt/lowstate message has been
  *         received yet.
  */
@@ -455,8 +455,8 @@ std::vector<double> DriverUnitreeLowState::get_joint_torques() const
  * @brief Returns every joint's last measured temperature.
  * @return A std::vector<double> of joint temperatures, in degrees Celsius, indexed
  *         as in the underlying LowState_::motor_state() array (see the class-level
- *         @note on full-array joint order). For ROBOT::G1 each entry is the larger
- *         of that joint's two onboard sensor readings -- see the class-level @note
+ *         note on full-array joint order). For ROBOT::G1 each entry is the larger
+ *         of that joint's two onboard sensor readings -- see the class-level note
  *         on per-joint temperature for why. Empty if no rt/lowstate message has been
  *         received yet.
  */
@@ -509,11 +509,11 @@ DriverUnitreeLowState::IMUData DriverUnitreeLowState::get_imu_data() const
  * @brief Returns the battery's last reported state of charge.
  * @details Only unitree_go::msg::dds_::LowState_ (ROBOT::H1) carries a bms_state()
  *          field; unitree_hg::msg::dds_::LowState_ (ROBOT::G1) has none at all (see
- *          the header's @note on battery state of charge and this method's own
- *          @warning). std::visit dispatches on the active alternative of
+ *          the header's note on battery state of charge and this method's own
+ *          warning). std::visit dispatches on the active alternative of
  *          latest_low_state_ rather than switching on robot_type_ directly, so this
  *          stays correct even if the ROBOT-to-message-type mapping in connect() is
- *          ever changed (see the class-level @warning on the H1 message-set
+ *          ever changed (see the class-level warning on the H1 message-set
  *          ambiguity).
  * @return State of charge as a percentage in [0, 100].
  * @throws std::runtime_error if no rt/lowstate message has been received yet, or if
@@ -567,7 +567,7 @@ std::size_t DriverUnitreeLowState::num_joints(const LIMB& limb) const
  * @brief Returns the given limb's (or the torso's) last measured joint positions.
  * @param limb Which limb (or TORSO) to read.
  * @return An Eigen::VectorXd of joint positions, in radians, sized and ordered per
- *         the class-level @note on limb layouts for robot_type_. Empty (size 0) if
+ *         the class-level note on limb layouts for robot_type_. Empty (size 0) if
  *         no rt/lowstate message has been received yet.
  */
 Eigen::VectorXd DriverUnitreeLowState::get_joint_positions(const LIMB& limb) const
@@ -580,7 +580,7 @@ Eigen::VectorXd DriverUnitreeLowState::get_joint_positions(const LIMB& limb) con
  * @brief Returns the given limb's (or the torso's) last measured joint velocities.
  * @param limb Which limb (or TORSO) to read.
  * @return An Eigen::VectorXd of joint velocities, in rad/s, sized and ordered per
- *         the class-level @note on limb layouts for robot_type_. Empty (size 0) if
+ *         the class-level note on limb layouts for robot_type_. Empty (size 0) if
  *         no rt/lowstate message has been received yet.
  */
 Eigen::VectorXd DriverUnitreeLowState::get_joint_velocities(const LIMB& limb) const
@@ -593,7 +593,7 @@ Eigen::VectorXd DriverUnitreeLowState::get_joint_velocities(const LIMB& limb) co
  * @brief Returns the given limb's (or the torso's) last estimated joint torques.
  * @param limb Which limb (or TORSO) to read.
  * @return An Eigen::VectorXd of estimated joint torques, in Nm, sized and ordered
- *         per the class-level @note on limb layouts for robot_type_. Empty (size 0)
+ *         per the class-level note on limb layouts for robot_type_. Empty (size 0)
  *         if no rt/lowstate message has been received yet.
  */
 Eigen::VectorXd DriverUnitreeLowState::get_joint_torques(const LIMB& limb) const
@@ -606,9 +606,9 @@ Eigen::VectorXd DriverUnitreeLowState::get_joint_torques(const LIMB& limb) const
  * @brief Returns the given limb's (or the torso's) last measured joint temperatures.
  * @param limb Which limb (or TORSO) to read.
  * @return An Eigen::VectorXd of joint temperatures, in degrees Celsius, sized and
- *         ordered per the class-level @note on limb layouts for robot_type_. For
+ *         ordered per the class-level note on limb layouts for robot_type_. For
  *         ROBOT::G1 each entry is the larger of that joint's two onboard sensor
- *         readings -- see the class-level @note on per-joint temperature for why.
+ *         readings -- see the class-level note on per-joint temperature for why.
  *         Empty (size 0) if no rt/lowstate message has been received yet.
  */
 Eigen::VectorXd DriverUnitreeLowState::get_joint_temperatures(const LIMB& limb) const

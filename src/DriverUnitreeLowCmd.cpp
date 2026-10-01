@@ -86,13 +86,13 @@ std::uint32_t crc32_core(const std::uint32_t* ptr, std::uint32_t len)
  * @details Identical index tables to DriverUnitreeLowState.cpp's own (private,
  *          anonymous-namespace) limb_indices() -- duplicated rather than shared so
  *          this class has no compile-time dependency on DriverUnitreeLowState; see the
- *          header's class-level @note. Built fresh per call rather than a precomputed
+ *          header's class-level note. Built fresh per call rather than a precomputed
  *          file-scope table, for the same non-local-static reasoning given in
  *          DriverUnitreeLowState.cpp's own copy of this function.
  * @param robot Which robot's layout to use.
  * @param limb Which limb (or TORSO) to return indices for.
  * @return The motor_cmd() indices belonging to @p limb under @p robot 's layout, in
- *         physical joint order (see DriverUnitreeLowState's class-level @note on limb
+ *         physical joint order (see DriverUnitreeLowState's class-level note on limb
  *         layouts for the exact indices, joint names, and their provenance).
  * @throws std::invalid_argument if @p limb doesn't match any known enumerator. This
  *         branch is currently unreachable given LIMB's five enumerators are all
@@ -160,7 +160,7 @@ public:
     std::atomic<bool> is_connected_{false};
     std::atomic<bool> is_initialized_{false};
 
-    std::shared_ptr<marinholab::sas::core::ShutdownSignaler> shutdown_signaler_; ///< Checked once per publish() call; see the class-level @note.
+    std::shared_ptr<marinholab::sas::core::ShutdownSignaler> shutdown_signaler_; ///< Checked once per publish() call; see the class-level note.
 
     explicit Impl(const std::shared_ptr<marinholab::sas::core::ShutdownSignaler>& shutdown_signaler)
         : shutdown_signaler_{shutdown_signaler} {}
@@ -183,14 +183,14 @@ public:
      *            - head()[0]/head()[1] = 0xFE, 0xEF -- a fixed message-framing marker.
      *            - level_flag() = 0xFF -- selects low-level control; this is the
      *              unitree_go-family counterpart to unitree_hg's mode_machine
-     *              requirement (see the class-level @warning), though unlike
+     *              requirement (see the class-level warning), though unlike
      *              mode_machine this value is fixed and not read back from
      *              rt/lowstate.
      *            - gpio() = 0 -- set explicitly by the reference example even though
      *              it's already the zero-initialized default; kept here to mirror
      *              that example exactly rather than relying on the implicit zero.
      *          ROBOT::G1's unitree_hg::msg::dds_::LowCmd_ has no equivalent framing
-     *          fields (see the class-level @details) -- only mode_pr/mode_machine,
+     *          fields (see the class-level details) -- only mode_pr/mode_machine,
      *          which set_ankle_mode()/set_mode_machine() cover separately.
      */
     void reset_buffer(const ROBOT& robot)
@@ -212,7 +212,7 @@ public:
 /**
  * @brief Constructs the wrapper. No network I/O happens here; see connect().
  * @param shutdown_signaler Shared sas::ShutdownSignaler, checked once per publish()
- *        call (see the class-level @note -- this class has no background loop to poll
+ *        call (see the class-level note -- this class has no background loop to poll
  *        it from otherwise).
  * @param robot_type Which rt/lowcmd message type to publish. Fixed for the lifetime of
  *        this object (robot_type_ is const) -- construct a new instance if you need to
@@ -278,7 +278,7 @@ void DriverUnitreeLowCmd::connect()
 
 /**
  * @brief Marks this object ready for use.
- * @details There is no background loop to start (see the class-level @note); this
+ * @details There is no background loop to start (see the class-level note); this
  *          only flips a flag.
  * @throws std::runtime_error if connect() has not been called yet.
  */
@@ -293,7 +293,7 @@ void DriverUnitreeLowCmd::initialize()
 /**
  * @brief Marks this object as no longer initialized.
  * @details No blocking behavior and nothing is published: there is no control loop to
- *          ramp down (see the class-level @note). Callers that need the robot left in
+ *          ramp down (see the class-level note). Callers that need the robot left in
  *          a known-safe state should explicitly buffer and publish() a disabled
  *          command before calling this.
  */
@@ -321,7 +321,7 @@ void DriverUnitreeLowCmd::disconnect()
 
 /**
  * @brief Returns the number of motor_cmd() slots in the underlying rt/lowcmd message.
- * @return 35 for G1, 20 for H1 (see the class-level @details) -- a static property of
+ * @return 35 for G1, 20 for H1 (see the class-level details) -- a static property of
  *         robot_type_, available even before connect() is called.
  */
 std::size_t DriverUnitreeLowCmd::num_joints() const
