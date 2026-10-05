@@ -100,13 +100,13 @@
  *
  * @note Limb layouts (get_joint_positions(LIMB)/get_joint_velocities(LIMB)/
  *       get_joint_torques(LIMB)/get_joint_temperatures(LIMB)): which motor_state()
- *       indices belong to each LIMB (arms, legs, or TORSO -- the waist), and how many
+ *       indices belong to each LIMB (arms, legs, or WAIST), and how many
  *       joints each maps to, differs by ROBOT and is looked up internally at call
  *       time from robot_type_ -- callers just pass a LIMB and get back a correctly-
  *       sized Eigen::VectorXd for whichever robot this instance was constructed for.
  *       - ROBOT::G1: LEFT_LEG = indices [0..5] (6 joints: HipPitch, HipRoll,
  *         HipYaw, Knee, AnklePitch, AnkleRoll), RIGHT_LEG = indices [6..11] (same 6
- *         joints, right side), TORSO = indices [12..14] (3 joints: WaistYaw,
+ *         joints, right side), WAIST = indices [12..14] (3 joints: WaistYaw,
  *         WaistRoll, WaistPitch -- WaistRoll/WaistPitch are reported invalid on
  *         G1 hardware variants with the waist locked, per the SDK's own
  *         G1JointIndex comments; this class still returns all 3 slots as reported
@@ -117,7 +117,7 @@
  *         example/g1/low_level/g1_ankle_swing_example.cpp G1JointIndex enum, and
  *         cross-checked against this same index set already baked into
  *         DriverUnitreeArmSDK's own G1 joint layout (whose ordering is
- *         left-arm(7) + right-arm(7) + waist(3), i.e. this same TORSO index set).
+ *         left-arm(7) + right-arm(7) + waist(3), i.e. this same WAIST index set).
  *       - ROBOT::H1: this class's ROBOT::H1 subscribes to rt/lowstate as
  *         unitree_go::msg::dds_::LowState_ (see the warning above), so the limb
  *         indices used here match that same generation's layout, verified against
@@ -126,7 +126,7 @@
  *         subscribes to the same message type). This generation has a different
  *         joint count per limb than G1: LEFT_LEG = {HipYaw, HipRoll, HipPitch,
  *         Knee, Ankle} (5 joints -- a single combined Ankle joint, not separate
- *         pitch/roll), RIGHT_LEG = same 5 joints on the right, TORSO = {WaistYaw}
+ *         pitch/roll), RIGHT_LEG = same 5 joints on the right, WAIST = {WaistYaw}
  *         (a single joint -- this generation has no waist roll/pitch at all),
  *         LEFT_ARM = {ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow} (4 joints
  *         -- no wrist joints at all in this generation), RIGHT_ARM = same 4 joints
@@ -135,7 +135,7 @@
  *         (i.e. it actually publishes unitree_hg::msg::dds_::LowState_), these
  *         indices would need to change too -- to the H1-2/27-DoF layout in
  *         example/h1/low_level/h1_27dof_example.cpp's H1JointIndex enum instead
- *         (6-joint legs, 1-joint TORSO/waist at a different index, 7-joint arms
+ *         (6-joint legs, 1-joint WAIST at a different index, 7-joint arms
  *         starting at index 13), which is a different joint count per limb again.
  *
  * @note Full-array joint order (get_joint_positions()/get_joint_velocities()/
@@ -204,16 +204,19 @@ public:
     enum class ROBOT{G1,H1}; // Other robots can be added in future versions
 
     /**
-     * @brief Identifies one limb's (or the torso's) group of joints within the
+     * @brief Identifies one limb's (or the waist's) group of joints within the
      *        underlying rt/lowstate motor_state() array.
      *
      * @note Which motor_state() indices -- and how many joints -- each entry maps to
      *       is robot-specific and is looked up internally from robot_type_; see the
      *       class-level note on limb layouts for the exact indices and their
-     *       provenance. TORSO refers to the waist joint(s) (there is no separate
-     *       "head" or other body segment addressed by this enum).
+     *       provenance. WAIST refers to the waist joint(s) (WaistYaw, WaistRoll,
+     *       WaistPitch), named as in unitree_sdk2 and in DriverUnitreeArmSDK::LIMB
+     *       (there is no separate "head" or other body segment addressed by this enum).
+     * @note TORSO is the former name of WAIST, kept as a deprecated alias.
      */
-    enum class LIMB{LEFT_ARM, RIGHT_ARM, LEFT_LEG, RIGHT_LEG, TORSO};
+    enum class LIMB{LEFT_ARM, RIGHT_ARM, LEFT_LEG, RIGHT_LEG, WAIST,
+                    TORSO [[deprecated("Use LIMB::WAIST.")]] = WAIST};
 
     /**
      * @brief One IMU reading, as published in LowState_::imu_state().
@@ -322,30 +325,30 @@ public:
      */
     double get_state_of_charge() const;
 
-    // --- Per-limb (and torso) convenience getters ---
+    // --- Per-limb (and waist) convenience getters ---
     // Joint count and indexing within motor_state() are robot-specific; see the
     // class-level @note on limb layouts. All four (positions/velocities/torques/
     // temperatures) return an empty (size-0) Eigen::VectorXd if no rt/lowstate
     // message has been received yet, for consistency with the full-body getters
     // above.
 
-    /// Number of joints in the given limb (or TORSO) for this instance's robot type
-    /// (e.g. 7 for G1's LEFT_ARM, 4 for H1's LEFT_ARM; 3 for G1's TORSO, 1 for H1's
-    /// TORSO). Does not require a message to have been received yet -- this is a
+    /// Number of joints in the given limb (or WAIST) for this instance's robot type
+    /// (e.g. 7 for G1's LEFT_ARM, 4 for H1's LEFT_ARM; 3 for G1's WAIST, 1 for H1's
+    /// WAIST). Does not require a message to have been received yet -- this is a
     /// static property of (robot_type_, limb).
     std::size_t num_joints(const LIMB& limb) const;
 
-    /// Returns the given limb's (or the torso's) last measured joint positions, in
+    /// Returns the given limb's (or the waist's) last measured joint positions, in
     /// radians, ordered as documented in the class-level note on limb layouts.
     Eigen::VectorXd get_joint_positions(const LIMB& limb) const;
 
-    /// Returns the given limb's (or the torso's) last measured joint velocities, in rad/s.
+    /// Returns the given limb's (or the waist's) last measured joint velocities, in rad/s.
     Eigen::VectorXd get_joint_velocities(const LIMB& limb) const;
 
-    /// Returns the given limb's (or the torso's) last estimated joint torques, in Nm.
+    /// Returns the given limb's (or the waist's) last estimated joint torques, in Nm.
     Eigen::VectorXd get_joint_torques(const LIMB& limb) const;
 
-    /// Returns the given limb's (or the torso's) last measured joint temperatures, in
+    /// Returns the given limb's (or the waist's) last measured joint temperatures, in
     /// degrees Celsius. For ROBOT::G1, each entry is the larger of that joint's two
     /// onboard sensor readings -- see the class-level note on per-joint temperature.
     Eigen::VectorXd get_joint_temperatures(const LIMB& limb) const;

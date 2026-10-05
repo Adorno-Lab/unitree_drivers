@@ -81,7 +81,7 @@ std::uint32_t crc32_core(const std::uint32_t* ptr, std::uint32_t len)
 }
 
 /**
- * @brief Looks up the motor_cmd() indices for one limb (or the torso) of one robot
+ * @brief Looks up the motor_cmd() indices for one limb (or the waist) of one robot
  *        type.
  * @details Identical index tables to DriverUnitreeLowState.cpp's own (private,
  *          anonymous-namespace) limb_indices() -- duplicated rather than shared so
@@ -90,7 +90,7 @@ std::uint32_t crc32_core(const std::uint32_t* ptr, std::uint32_t len)
  *          file-scope table, for the same non-local-static reasoning given in
  *          DriverUnitreeLowState.cpp's own copy of this function.
  * @param robot Which robot's layout to use.
- * @param limb Which limb (or TORSO) to return indices for.
+ * @param limb Which limb (or WAIST) to return indices for.
  * @return The motor_cmd() indices belonging to @p limb under @p robot 's layout, in
  *         physical joint order (see DriverUnitreeLowState's class-level note on limb
  *         layouts for the exact indices, joint names, and their provenance).
@@ -113,7 +113,7 @@ std::vector<int> limb_indices(const DriverUnitreeLowCmd::ROBOT& robot,
         case LIMB::RIGHT_ARM: return {22, 23, 24, 25, 26, 27, 28}; // same 7 joints, right side
         case LIMB::LEFT_LEG:  return {0, 1, 2, 3, 4, 5};           // HipPitch, HipRoll, HipYaw, Knee, AnklePitch, AnkleRoll
         case LIMB::RIGHT_LEG: return {6, 7, 8, 9, 10, 11};         // same 6 joints, right side
-        case LIMB::TORSO:     return {12, 13, 14};                 // WaistYaw, WaistRoll, WaistPitch
+        case LIMB::WAIST:     return {12, 13, 14};                 // WaistYaw, WaistRoll, WaistPitch
         }
     } else { // ROBOT::H1
         // H1 (legacy generation, unitree_go/go2, 20-slot motor_cmd array). Same
@@ -124,7 +124,7 @@ std::vector<int> limb_indices(const DriverUnitreeLowCmd::ROBOT& robot,
         case LIMB::RIGHT_ARM: return {12, 13, 14, 15};  // ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow
         case LIMB::LEFT_LEG:  return {7, 3, 4, 5, 10};  // HipYaw, HipRoll, HipPitch, Knee, Ankle
         case LIMB::RIGHT_LEG: return {8, 0, 1, 2, 11};  // HipYaw, HipRoll, HipPitch, Knee, Ankle
-        case LIMB::TORSO:     return {6};               // WaistYaw
+        case LIMB::WAIST:     return {6};               // WaistYaw
         }
     }
     throw std::invalid_argument("DriverUnitreeLowCmd: unknown LIMB");
@@ -332,9 +332,9 @@ std::size_t DriverUnitreeLowCmd::num_joints() const
 }
 
 /**
- * @brief Returns the number of joints in the given limb (or TORSO) for this instance's
+ * @brief Returns the number of joints in the given limb (or WAIST) for this instance's
  *        robot type.
- * @param limb Which limb (or TORSO) to query.
+ * @param limb Which limb (or WAIST) to query.
  * @return The joint count for @p limb under robot_type_'s layout, looked up via
  *         limb_indices(). A static property of (robot_type_, limb); does not require
  *         connect() to have been called yet.
@@ -363,7 +363,7 @@ void DriverUnitreeLowCmd::set_joint_command(std::size_t index, const MotorComman
 }
 
 /**
- * @brief Buffers commands for every joint in one limb (or the torso) at once.
+ * @brief Buffers commands for every joint in one limb (or the waist) at once.
  * @throws std::invalid_argument if commands.size() != num_joints(limb).
  */
 void DriverUnitreeLowCmd::set_limb_command(const LIMB& limb, const std::vector<MotorCommand>& commands)
@@ -400,7 +400,7 @@ DriverUnitreeLowCmd::MotorCommand DriverUnitreeLowCmd::get_joint_command(std::si
 }
 
 /**
- * @brief Buffers target positions for every joint in one limb (or the torso),
+ * @brief Buffers target positions for every joint in one limb (or the waist),
  *        touching only their q fields.
  * @details Writes only the q field of each joint in @p limb into buffered_cmd_ --
  *          unlike set_limb_command(), which overwrites every field of each joint
