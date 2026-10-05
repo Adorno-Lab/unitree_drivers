@@ -55,7 +55,7 @@ namespace
 {
 
 /**
- * @brief Looks up the motor_state() indices for one limb (or the torso) of one
+ * @brief Looks up the motor_state() indices for one limb (or the waist) of one
  *        robot type.
  *
  * @details Builds and returns a fresh std::vector<int> per call rather than
@@ -71,7 +71,7 @@ namespace
  *          std::visit already happening in the same call.
  *
  * @param robot Which robot's layout to use.
- * @param limb Which limb (or TORSO) to return indices for.
+ * @param limb Which limb (or WAIST) to return indices for.
  * @return The motor_state() indices belonging to @p limb under @p robot 's layout,
  *         in physical joint order (see the class-level note on limb layouts in the
  *         header for the exact indices, joint names, and their provenance).
@@ -96,7 +96,7 @@ std::vector<int> limb_indices(const DriverUnitreeLowState::ROBOT& robot,
         case LIMB::RIGHT_ARM: return {22, 23, 24, 25, 26, 27, 28}; // same 7 joints, right side
         case LIMB::LEFT_LEG:  return {0, 1, 2, 3, 4, 5};           // HipPitch, HipRoll, HipYaw, Knee, AnklePitch, AnkleRoll
         case LIMB::RIGHT_LEG: return {6, 7, 8, 9, 10, 11};         // same 6 joints, right side
-        case LIMB::TORSO:     return {12, 13, 14};                 // WaistYaw, WaistRoll, WaistPitch
+        case LIMB::WAIST:     return {12, 13, 14};                 // WaistYaw, WaistRoll, WaistPitch
         }
     } else { // ROBOT::H1
         // H1 (legacy generation, unitree_go/go2, 20-slot motor_state array --
@@ -106,7 +106,7 @@ std::vector<int> limb_indices(const DriverUnitreeLowState::ROBOT& robot,
         // example/h1/low_level/motors.hpp JointIndex enum (the header used by
         // example/h1/low_level/humanoid.hpp, which subscribes to the same message
         // type). Note the different joint counts vs G1: a single combined Ankle
-        // joint per leg (5 joints, not 6), a single-joint torso/waist (1 joint, not
+        // joint per leg (5 joints, not 6), a single-joint waist (1 joint, not
         // 3 -- no waist roll/pitch at all in this generation), and no wrist joints
         // at all (4 joints per arm, not 7). Index 9 (kNotUsedJoint in motors.hpp) is
         // deliberately absent from every case below -- it belongs to no limb.
@@ -115,7 +115,7 @@ std::vector<int> limb_indices(const DriverUnitreeLowState::ROBOT& robot,
         case LIMB::RIGHT_ARM: return {12, 13, 14, 15}; // ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow
         case LIMB::LEFT_LEG:  return {7, 3, 4, 5, 10}; // HipYaw, HipRoll, HipPitch, Knee, Ankle
         case LIMB::RIGHT_LEG: return {8, 0, 1, 2, 11}; // HipYaw, HipRoll, HipPitch, Knee, Ankle
-        case LIMB::TORSO:     return {6};              // WaistYaw
+        case LIMB::WAIST:     return {6};              // WaistYaw
         }
     }
     throw std::invalid_argument("DriverUnitreeLowState: unknown LIMB");
@@ -546,14 +546,14 @@ double DriverUnitreeLowState::get_state_of_charge() const
     return soc;
 }
 
-// --- Per-limb (and torso) convenience getters ---
+// --- Per-limb (and waist) convenience getters ---
 
 /**
- * @brief Returns the number of joints in the given limb (or TORSO) for this
+ * @brief Returns the number of joints in the given limb (or WAIST) for this
  *        instance's robot type.
- * @param limb Which limb (or TORSO) to query.
+ * @param limb Which limb (or WAIST) to query.
  * @return The joint count for @p limb under robot_type_'s layout (e.g. 7 for G1's
- *         LEFT_ARM, 4 for H1's LEFT_ARM; 3 for G1's TORSO, 1 for H1's TORSO). This is
+ *         LEFT_ARM, 4 for H1's LEFT_ARM; 3 for G1's WAIST, 1 for H1's WAIST). This is
  *         a static property of (robot_type_, limb), looked up via limb_indices(), so
  *         unlike the getters below it doesn't require a message to have been
  *         received yet.
@@ -564,8 +564,8 @@ std::size_t DriverUnitreeLowState::num_joints(const LIMB& limb) const
 }
 
 /**
- * @brief Returns the given limb's (or the torso's) last measured joint positions.
- * @param limb Which limb (or TORSO) to read.
+ * @brief Returns the given limb's (or the waist's) last measured joint positions.
+ * @param limb Which limb (or WAIST) to read.
  * @return An Eigen::VectorXd of joint positions, in radians, sized and ordered per
  *         the class-level note on limb layouts for robot_type_. Empty (size 0) if
  *         no rt/lowstate message has been received yet.
@@ -577,8 +577,8 @@ Eigen::VectorXd DriverUnitreeLowState::get_joint_positions(const LIMB& limb) con
 }
 
 /**
- * @brief Returns the given limb's (or the torso's) last measured joint velocities.
- * @param limb Which limb (or TORSO) to read.
+ * @brief Returns the given limb's (or the waist's) last measured joint velocities.
+ * @param limb Which limb (or WAIST) to read.
  * @return An Eigen::VectorXd of joint velocities, in rad/s, sized and ordered per
  *         the class-level note on limb layouts for robot_type_. Empty (size 0) if
  *         no rt/lowstate message has been received yet.
@@ -590,8 +590,8 @@ Eigen::VectorXd DriverUnitreeLowState::get_joint_velocities(const LIMB& limb) co
 }
 
 /**
- * @brief Returns the given limb's (or the torso's) last estimated joint torques.
- * @param limb Which limb (or TORSO) to read.
+ * @brief Returns the given limb's (or the waist's) last estimated joint torques.
+ * @param limb Which limb (or WAIST) to read.
  * @return An Eigen::VectorXd of estimated joint torques, in Nm, sized and ordered
  *         per the class-level note on limb layouts for robot_type_. Empty (size 0)
  *         if no rt/lowstate message has been received yet.
@@ -603,8 +603,8 @@ Eigen::VectorXd DriverUnitreeLowState::get_joint_torques(const LIMB& limb) const
 }
 
 /**
- * @brief Returns the given limb's (or the torso's) last measured joint temperatures.
- * @param limb Which limb (or TORSO) to read.
+ * @brief Returns the given limb's (or the waist's) last measured joint temperatures.
+ * @param limb Which limb (or WAIST) to read.
  * @return An Eigen::VectorXd of joint temperatures, in degrees Celsius, sized and
  *         ordered per the class-level note on limb layouts for robot_type_. For
  *         ROBOT::G1 each entry is the larger of that joint's two onboard sensor

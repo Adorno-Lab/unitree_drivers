@@ -148,14 +148,16 @@ public:
     enum class ROBOT{G1,H1}; // Other robots can be added in future versions
 
     /**
-     * @brief Identifies one limb's (or the torso's) group of joints within the
+     * @brief Identifies one limb's (or the waist's) group of joints within the
      *        underlying rt/lowcmd motor_cmd() array.
      * @note Mirrors DriverUnitreeLowState::LIMB exactly; see the class-level note on
-     *       limb layouts for the exact indices and their provenance. TORSO refers to
+     *       limb layouts for the exact indices and their provenance. WAIST refers to
      *       the waist joint(s) (there is no separate "head" or other body segment
      *       addressed by this enum).
+     * @note TORSO is the former name of WAIST, kept as a deprecated alias.
      */
-    enum class LIMB{LEFT_ARM, RIGHT_ARM, LEFT_LEG, RIGHT_LEG, TORSO};
+    enum class LIMB{LEFT_ARM, RIGHT_ARM, LEFT_LEG, RIGHT_LEG, WAIST,
+                    TORSO [[deprecated("Use LIMB::WAIST.")]] = WAIST};
 
     /**
      * @brief Ankle control coordinate mode, i.e. unitree_hg::msg::dds_::LowCmd_'s
@@ -239,9 +241,9 @@ public:
     /// (35 for G1, 20 for H1 -- see the class-level details).
     std::size_t num_joints() const;
 
-    /// Number of joints in the given limb (or TORSO) for this instance's robot type
-    /// (e.g. 7 for G1's LEFT_ARM, 4 for H1's LEFT_ARM; 3 for G1's TORSO, 1 for H1's
-    /// TORSO). Mirrors DriverUnitreeLowState::num_joints(LIMB) const exactly. Does
+    /// Number of joints in the given limb (or WAIST) for this instance's robot type
+    /// (e.g. 7 for G1's LEFT_ARM, 4 for H1's LEFT_ARM; 3 for G1's WAIST, 1 for H1's
+    /// WAIST). Mirrors DriverUnitreeLowState::num_joints(LIMB) const exactly. Does
     /// not require connect() to have been called yet -- this is a static property of
     /// (robot_type_, limb).
     std::size_t num_joints(const LIMB& limb) const;
@@ -260,8 +262,8 @@ public:
     void set_joint_command(std::size_t index, const MotorCommand& command);
 
     /**
-     * @brief Buffers commands for every joint in one limb (or the torso) at once.
-     * @param limb Which limb (or TORSO) to command.
+     * @brief Buffers commands for every joint in one limb (or the waist) at once.
+     * @param limb Which limb (or WAIST) to command.
      * @param commands One MotorCommand per joint in @p limb, in the same physical
      *        joint order as DriverUnitreeLowState's per-limb getters -- see that
      *        class's class-level note on limb layouts.
@@ -281,9 +283,9 @@ public:
     MotorCommand get_joint_command(std::size_t index) const;
 
     /**
-     * @brief Buffers target positions for every joint in one limb (or the torso),
+     * @brief Buffers target positions for every joint in one limb (or the waist),
      *        touching only their q fields.
-     * @param limb Which limb (or TORSO) to command.
+     * @param limb Which limb (or WAIST) to command.
      * @param positions Target position, in radians, for each joint in @p limb, in
      *        the same physical joint order as DriverUnitreeLowState's per-limb
      *        getters -- see that class's class-level note on limb layouts.
