@@ -38,6 +38,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <string>
 #include <thread>
 #include <mutex>
@@ -53,6 +54,13 @@ static const std::string kTopicArmSDK = "rt/arm_sdk";
 // the one place (plus H1Channels below) to change.
 static const std::string kTopicLowStateG1 = "rt/lowstate";
 static const std::string kTopicLowStateH1 = "rt/lf/lowstate";
+
+// Default PD gains of every joint, from the official arm_sdk examples (G1 and H1).
+static constexpr float kDefaultKp = 60.0f;
+static constexpr float kDefaultKd = 1.5f;
+// Sanity bounds checked by set_gains(), against typos only -- not motor torque limits.
+static constexpr double kMaxKp = 500.0;
+static constexpr double kMaxKd = 20.0;
 
 namespace
 {
@@ -173,11 +181,19 @@ public:
     // with no target yet holds its measured pose on engage instead of tracking toward the
     // all-zero initial target_. Guarded by data_mutex_.
     std::array<bool,3> target_set_{};
+    // PD gains, ordered as Layout::joints. target_* are the set_gains() values, desired_*
+    // the ramped values actually published. Guarded by data_mutex_.
+    std::vector<float> target_kp_;
+    std::vector<float> target_kd_;
+    std::vector<float> desired_kp_;
+    std::vector<float> desired_kd_;
 
     // rt/arm_sdk blend/ramp parameters. See official arm_sdk examples (G1 and H1).
     float arm_weight_{0.0f};
     float weight_rate_{0.2f};          // weight units/sec ramp rate (both engage & disengage)
     float max_joint_velocity_{0.5f};   // rad/s cap on the position tracker
+    float kp_rate_{250.0f};            // (Nm/rad)/s ramp rate of desired_kp_ toward target_kp_
+    float kd_rate_{2.5f};              // (Nm*s/rad)/s ramp rate of desired_kd_ toward target_kd_
     double arm_control_period_{0.02};  // control loop period, seconds
     std::atomic<bool> arms_enabled_{false};
 
@@ -205,6 +221,10 @@ public:
         target_(layout_.joints.size(), 0.0f),
         current_(layout_.joints.size(), 0.0f),
         desired_(layout_.joints.size(), 0.0f),
+        target_kp_(layout_.joints.size(), kDefaultKp),
+        target_kd_(layout_.joints.size(), kDefaultKd),
+        desired_kp_(layout_.joints.size(), kDefaultKp),
+        desired_kd_(layout_.joints.size(), kDefaultKd),
         arm_control_period_{control_period},
         shutdown_signaler_{shutdown_signaler}
     {
@@ -298,6 +318,8 @@ public:
             const bool enabled = arms_enabled_;
             const float delta_weight = weight_rate_ * static_cast<float>(arm_control_period_);
             const float max_joint_delta = max_joint_velocity_ * static_cast<float>(arm_control_period_);
+            const float max_kp_delta = kp_rate_ * static_cast<float>(arm_control_period_);
+            const float max_kd_delta = kd_rate_ * static_cast<float>(arm_control_period_);
 
             if (enabled && !arm_control_seeded_) {
                 // Seed the tracker from measured state so engaging never snaps the arm.
@@ -331,12 +353,20 @@ public:
                         desired_.at(j) += std::clamp(
                             limited_target(j) - desired_.at(j),
                             -max_joint_delta, max_joint_delta);
+                        // Ramp the gains too, so set_gains() while engaged never steps
+                        // the joint torque (kp * position error).
+                        desired_kp_.at(j) += std::clamp(
+                            target_kp_.at(j) - desired_kp_.at(j),
+                            -max_kp_delta, max_kp_delta);
+                        desired_kd_.at(j) += std::clamp(
+                            target_kd_.at(j) - desired_kd_.at(j),
+                            -max_kd_delta, max_kd_delta);
 
                         auto& mc = ch.cmd_msg.motor_cmd().at(layout_.joints.at(j));
                         mc.q(desired_.at(j));
                         mc.dq(0.f);
-                        mc.kp(60.f);
-                        mc.kd(1.5f);
+                        mc.kp(desired_kp_.at(j));
+                        mc.kd(desired_kd_.at(j));
                         mc.tau(0.f);
                     }
                 }
@@ -545,4 +575,54 @@ std::vector<double> DriverUnitreeArmSDK::get_desired_positions(const LIMB& limb)
 {
     std::scoped_lock lock(impl_->data_mutex_);
     return impl_->limb_values(impl_->desired_, limb);
+}
+
+void DriverUnitreeArmSDK::set_gains(const LIMB& limb, const std::vector<double>& kp, const std::vector<double>& kd)
+{
+    const std::size_t n = impl_->layout_.count(limb);
+    if (kp.size() != n || kd.size() != n) {
+        throw std::invalid_argument("DriverUnitreeArmSDK::set_gains: expected " + std::to_string(n) +
+                                    " kp and kd values for this limb on this robot, got " + std::to_string(kp.size()) +
+                                    " kp and " + std::to_string(kd.size()) + " kd");
+    }
+    for (std::size_t i = 0; i < n; ++i) {
+        if (!std::isfinite(kp.at(i)) || kp.at(i) < 0.0 || kp.at(i) > kMaxKp) {
+            throw std::invalid_argument("DriverUnitreeArmSDK::set_gains: kp[" + std::to_string(i) + "] = " +
+                                        std::to_string(kp.at(i)) + " is outside [0, " + std::to_string(kMaxKp) + "]");
+        }
+        if (!std::isfinite(kd.at(i)) || kd.at(i) < 0.0 || kd.at(i) > kMaxKd) {
+            throw std::invalid_argument("DriverUnitreeArmSDK::set_gains: kd[" + std::to_string(i) + "] = " +
+                                        std::to_string(kd.at(i)) + " is outside [0, " + std::to_string(kMaxKd) + "]");
+        }
+    }
+    std::scoped_lock lock(impl_->data_mutex_);
+    const std::size_t off = impl_->layout_.offset(limb);
+    for (std::size_t i = 0; i < n; ++i) {
+        impl_->target_kp_.at(off + i) = static_cast<float>(kp.at(i));
+        impl_->target_kd_.at(off + i) = static_cast<float>(kd.at(i));
+    }
+}
+
+std::vector<double> DriverUnitreeArmSDK::get_target_kp(const LIMB& limb)
+{
+    std::scoped_lock lock(impl_->data_mutex_);
+    return impl_->limb_values(impl_->target_kp_, limb);
+}
+
+std::vector<double> DriverUnitreeArmSDK::get_target_kd(const LIMB& limb)
+{
+    std::scoped_lock lock(impl_->data_mutex_);
+    return impl_->limb_values(impl_->target_kd_, limb);
+}
+
+std::vector<double> DriverUnitreeArmSDK::get_desired_kp(const LIMB& limb)
+{
+    std::scoped_lock lock(impl_->data_mutex_);
+    return impl_->limb_values(impl_->desired_kp_, limb);
+}
+
+std::vector<double> DriverUnitreeArmSDK::get_desired_kd(const LIMB& limb)
+{
+    std::scoped_lock lock(impl_->data_mutex_);
+    return impl_->limb_values(impl_->desired_kd_, limb);
 }

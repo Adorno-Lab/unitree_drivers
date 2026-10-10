@@ -66,6 +66,9 @@
  *          per limb depends on the robot: use get_num_joints() to query it. The
  *          setters throw std::invalid_argument on a size mismatch.
  *
+ *          Every joint is driven with kp = 60, kd = 1.5 unless changed per joint with
+ *          set_gains(); gain changes are ramped, so they can be tuned while engaged.
+ *
  * @warning enable_arm_control() ramps the blend weight up gradually rather than
  *          snapping to 1.0, and seeds the internal trajectory tracker from the
  *          currently measured joint positions before ramping, so engaging never
@@ -217,4 +220,31 @@ public:
     std::vector<double> get_positions(const LIMB& limb);
     /// Returns @p limb's commanded trajectory-point positions, in radians (get_num_joints(limb) values).
     std::vector<double> get_desired_positions(const LIMB& limb);
+
+    /**
+     * @brief Sets the PD gains of every joint of @p limb.
+     * @param limb Which joint group to set.
+     * @param kp Exactly get_num_joints(limb) position gains, in Nm/rad, in the same joint
+     *        order as set_target_positions().
+     * @param kd Exactly get_num_joints(limb) velocity gains, in Nm·s/rad, same order.
+     * @throws std::invalid_argument if a size does not match get_num_joints(limb), or a
+     *         gain is not finite, negative, or above the sanity bound (kp <= 500,
+     *         kd <= 20). The bounds only guard against typos; they are not the motors'
+     *         torque limits.
+     * @note Every joint defaults to kp = 60, kd = 1.5 (the values of Unitree's arm_sdk
+     *       examples).
+     * @note Safe to call while arm control is engaged: the gains actually published
+     *       (see get_desired_kp()/get_desired_kd()) ramp toward the new values at
+     *       250 (Nm/rad)/s for kp and 2.5 (Nm·s/rad)/s for kd, so a change never steps the
+     *       joint torque. The ramp only advances while arm control is engaged.
+     */
+    void set_gains(const LIMB& limb, const std::vector<double>& kp, const std::vector<double>& kd);
+    /// Returns @p limb's requested position gains (the last set_gains() values), in Nm/rad.
+    std::vector<double> get_target_kp(const LIMB& limb);
+    /// Returns @p limb's requested velocity gains (the last set_gains() values), in Nm·s/rad.
+    std::vector<double> get_target_kd(const LIMB& limb);
+    /// Returns @p limb's position gains currently being published (ramping toward get_target_kp()), in Nm/rad.
+    std::vector<double> get_desired_kp(const LIMB& limb);
+    /// Returns @p limb's velocity gains currently being published (ramping toward get_target_kd()), in Nm·s/rad.
+    std::vector<double> get_desired_kd(const LIMB& limb);
 };
