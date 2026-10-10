@@ -55,9 +55,6 @@ static const std::string kTopicArmSDK = "rt/arm_sdk";
 static const std::string kTopicLowStateG1 = "rt/lowstate";
 static const std::string kTopicLowStateH1 = "rt/lf/lowstate";
 
-// Default PD gains of every joint, from the official arm_sdk examples (G1 and H1).
-static constexpr float kDefaultKp = 60.0f;
-static constexpr float kDefaultKd = 1.5f;
 // Sanity bounds checked by set_gains(), against typos only -- not motor torque limits.
 static constexpr double kMaxKp = 500.0;
 static constexpr double kMaxKd = 20.0;
@@ -82,6 +79,8 @@ struct Layout
     std::vector<int> joints;                 ///< Motor slots, left arm + right arm + waist.
     std::vector<float> lower_limits;         ///< Per-joint target lower bound (rad), same order as joints; empty = no clamping.
     std::vector<float> upper_limits;         ///< Per-joint target upper bound (rad), same order as joints; empty = no clamping.
+    std::vector<float> default_kp;           ///< Per-joint default position gain (Nm/rad), same order as joints.
+    std::vector<float> default_kd;           ///< Per-joint default velocity gain (Nm*s/rad), same order as joints.
     int weight_index{};                      ///< Motor slot whose q carries the blend weight.
     std::string state_topic;
 
@@ -107,6 +106,18 @@ Layout make_layout(const ROBOT& robot)
             22, 23, 24, 25, 26, 27, 28,   // right arm: same 7 joints
             12, 13, 14                    // waist: Yaw, Roll, Pitch
         };
+        // Gains of Unitree's G1 teleoperation (xr_teleoperate, teleop/robot_control/robot_arm.py):
+        // shoulders/elbow kp_low/kd_low, wrists kp_wrist/kd_wrist, waist kp_high/kd_high.
+        layout.default_kp = {
+            80, 80, 80, 80, 40, 40, 40,   // left arm
+            80, 80, 80, 80, 40, 40, 40,   // right arm
+            300, 300, 300                 // waist
+        };
+        layout.default_kd = {
+            3, 3, 3, 3, 1.5, 1.5, 1.5,
+            3, 3, 3, 3, 1.5, 1.5, 1.5,
+            3, 3, 3
+        };
         layout.weight_index = 29;         // kNotUsedJoint
         layout.state_topic = kTopicLowStateG1;
         break;
@@ -119,6 +130,9 @@ Layout make_layout(const ROBOT& robot)
             12, 13, 14, 15,               // right arm: same 4 joints
             6                             // waist: Yaw
         };
+        // Gains of example/h1/high_level/h1_arm_sdk_dds_example.cpp, for every joint.
+        layout.default_kp.assign(layout.joints.size(), 60.0f);
+        layout.default_kd.assign(layout.joints.size(), 1.5f);
         layout.weight_index = 9;          // kNotUsedJoint
         layout.state_topic = kTopicLowStateH1;
 
@@ -221,10 +235,10 @@ public:
         target_(layout_.joints.size(), 0.0f),
         current_(layout_.joints.size(), 0.0f),
         desired_(layout_.joints.size(), 0.0f),
-        target_kp_(layout_.joints.size(), kDefaultKp),
-        target_kd_(layout_.joints.size(), kDefaultKd),
-        desired_kp_(layout_.joints.size(), kDefaultKp),
-        desired_kd_(layout_.joints.size(), kDefaultKd),
+        target_kp_(layout_.default_kp),
+        target_kd_(layout_.default_kd),
+        desired_kp_(layout_.default_kp),
+        desired_kd_(layout_.default_kd),
         arm_control_period_{control_period},
         shutdown_signaler_{shutdown_signaler}
     {

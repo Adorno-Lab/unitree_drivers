@@ -66,8 +66,18 @@
  *          per limb depends on the robot: use get_num_joints() to query it. The
  *          setters throw std::invalid_argument on a size mismatch.
  *
- *          Every joint is driven with kp = 60, kd = 1.5 unless changed per joint with
- *          set_gains(); gain changes are ramped, so they can be tuned while engaged.
+ *          Default PD gains (kp / kd), unless changed per joint with set_gains(); gain
+ *          changes are ramped, so they can be tuned while engaged:
+ *
+ *          | | G1 | H1 |
+ *          |---|---|---|
+ *          | shoulders, elbow | 80 / 3 | 60 / 1.5 |
+ *          | wrists (roll, pitch, yaw) | 40 / 1.5 | -- |
+ *          | waist | 300 / 3 | 60 / 1.5 |
+ *
+ *          The G1 values are those of Unitree's G1 teleoperation (xr_teleoperate,
+ *          teleop/robot_control/robot_arm.py), the H1 values those of unitree_sdk2's
+ *          h1_arm_sdk_dds_example.cpp.
  *
  * @warning enable_arm_control() ramps the blend weight up gradually rather than
  *          snapping to 1.0, and seeds the internal trajectory tracker from the
@@ -231,8 +241,7 @@ public:
      *         gain is not finite, negative, or above the sanity bound (kp <= 500,
      *         kd <= 20). The bounds only guard against typos; they are not the motors'
      *         torque limits.
-     * @note Every joint defaults to kp = 60, kd = 1.5 (the values of Unitree's arm_sdk
-     *       examples).
+     * @note The defaults depend on the robot; see the class-level table.
      * @note Safe to call while arm control is engaged: the gains actually published
      *       (see get_desired_kp()/get_desired_kd()) ramp toward the new values at
      *       250 (Nm/rad)/s for kp and 2.5 (Nm·s/rad)/s for kd, so a change never steps the
