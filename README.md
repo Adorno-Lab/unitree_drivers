@@ -92,6 +92,12 @@ h1_arms.set_target_positions(Arm::LIMB::LEFT_ARM, {0.0, 0.3, 0.0, 0.5}); // size
 h1_arms.enable_arm_control();
 ```
 
+Every joint uses `kp = 60`, `kd = 1.5` by default. Change them per joint, one limb at a time, with `set_gains()`. You can call it while arm control is engaged: the published gains ramp toward the new values instead of jumping. For example,
+```cpp
+g1_arms.set_gains(Arm::LIMB::WAIST, {60.0, 60.0, 200.0},  // kp: Yaw, Roll, Pitch
+                                    {1.5, 1.5, 2.7});     // kd
+```
+
 # Intended use in SAS driver classes
 
 ![software_design](design/software_design.png)
