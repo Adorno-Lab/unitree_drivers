@@ -108,6 +108,16 @@ g1_arms.set_gains(Arm::LIMB::LEFT_ARM, {150, 150, 150, 150, 40, 40, 40},  // kp:
                                        {2.4, 2.4, 2.4, 2.4, 1.5, 1.5, 1.5}); // kd
 ```
 
+To give the H1 the gains Unitree uses for H1 teleoperation in [xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate/blob/main/teleop/robot_control/robot_arm.py) (`H1_ArmController`): 140 / 3 for the shoulders and elbow, and 300 / 5 for the waist.
+```cpp
+for (const auto limb : {Arm::LIMB::LEFT_ARM, Arm::LIMB::RIGHT_ARM})
+    h1_arms.set_gains(limb, {140, 140, 140, 140},  // kp: ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow
+                            {3, 3, 3, 3});         // kd
+h1_arms.set_gains(Arm::LIMB::WAIST, {300}, {5});   // Yaw
+```
+> [!WARNING]
+> xr_teleoperate sends these gains to the H1 on `rt/lowcmd`, not `rt/arm_sdk`. Unitree's only `rt/arm_sdk` reference for the H1 is the 60 / 1.5 example.
+
 # Intended use in SAS driver classes
 
 ![software_design](design/software_design.png)
