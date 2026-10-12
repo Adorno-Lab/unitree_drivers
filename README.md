@@ -92,6 +92,32 @@ h1_arms.set_target_positions(Arm::LIMB::LEFT_ARM, {0.0, 0.3, 0.0, 0.5}); // size
 h1_arms.enable_arm_control();
 ```
 
+Default PD gains (kp / kd):
+
+| | G1 | H1 |
+|---|---|---|
+| Shoulders, elbow | 80 / 3 | 60 / 1.5 |
+| Wrists (roll, pitch, yaw) | 40 / 1.5 | — |
+| Waist | 300 / 3 | 60 / 1.5 |
+
+The G1 values are the ones Unitree uses for G1 teleoperation ([xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate/blob/main/teleop/robot_control/robot_arm.py)). The H1 values come from unitree_sdk2's `h1_arm_sdk_dds_example.cpp`.
+
+You can change the gains per joint, one limb at a time, with `set_gains()`. You can call it while arm control is engaged: the published gains ramp toward the new values instead of jumping. For example, to make the G1 shoulders and elbows stiffer:
+```cpp
+g1_arms.set_gains(Arm::LIMB::LEFT_ARM, {150, 150, 150, 150, 40, 40, 40},  // kp: shoulder x3, elbow, wrist x3
+                                       {2.4, 2.4, 2.4, 2.4, 1.5, 1.5, 1.5}); // kd
+```
+
+To give the H1 the gains Unitree uses for H1 teleoperation in [xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate/blob/main/teleop/robot_control/robot_arm.py) (`H1_ArmController`): 140 / 3 for the shoulders and elbow, and 300 / 5 for the waist.
+```cpp
+for (const auto limb : {Arm::LIMB::LEFT_ARM, Arm::LIMB::RIGHT_ARM})
+    h1_arms.set_gains(limb, {140, 140, 140, 140},  // kp: ShoulderPitch, ShoulderRoll, ShoulderYaw, Elbow
+                            {3, 3, 3, 3});         // kd
+h1_arms.set_gains(Arm::LIMB::WAIST, {300}, {5});   // Yaw
+```
+> [!WARNING]
+> xr_teleoperate sends these gains to the H1 on `rt/lowcmd`, not `rt/arm_sdk`. Unitree's only `rt/arm_sdk` reference for the H1 is the 60 / 1.5 example.
+
 # Intended use in SAS driver classes
 
 ![software_design](design/software_design.png)
