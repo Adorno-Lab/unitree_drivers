@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(unitree_drivers
     VERSION 0.1.0
-    DESCRIPTION "Robot-agnostic pImpl wrappers around the Unitree SDK: locomotion, arm/waist control, and low-level joint/IMU telemetry"
+    DESCRIPTION "Robot-agnostic pImpl wrappers around the Unitree SDK: locomotion, arm/waist control, low-level joint/IMU telemetry, and the videohub camera"
     LANGUAGES CXX
 )
 
@@ -56,6 +56,7 @@ include(cmake/loco_client.cmake)
 include(cmake/arm_sdk.cmake)
 include(cmake/low_state.cmake)
 include(cmake/low_cmd.cmake)
+include(cmake/videohub.cmake)
 
 # ---------------------------------------------------------------------------
 # Install: headers, libraries, and the exported CMake package
@@ -64,7 +65,7 @@ install(DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(TARGETS loco_client arm_sdk low_state low_cmd
+install(TARGETS loco_client arm_sdk low_state low_cmd videohub
     EXPORT unitree_driversTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -103,4 +104,5 @@ install(FILES
 #     unitree_drivers::arm_sdk
 #     unitree_drivers::low_state
 #     unitree_drivers::low_cmd
+#     unitree_drivers::videohub
 #)
