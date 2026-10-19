@@ -46,14 +46,6 @@
  *          binary request, and the JPEG bytes as the binary reply. unitree_sdk2 only
  *          ships the Go2 client, whose service name is compiled into the library;
  *          this class sends the same requests with a configurable service name.
- *          Tested on:
- *          - G1: service "videohub" on eth0, DDS domain 0, 1920x1080 JPEG frames of
- *            ~145 KB, ~16 ms per request, ~18 new frames per second.
- *          - H1: service "videohub" on eth0, DDS domain 0, with the stock
- *            unitree::robot::go2::VideoClient (sas_robot_driver_unitree_h1's camera
- *            node). The H1 head camera is mounted upside down: its frames must be
- *            rotated by 180 degrees, which is left to the caller (this class only
- *            returns the JPEG bytes, it does not decode them).
  *
  *          The protocol is the same on every robot tested, so unlike the other classes
  *          of unitree_drivers there is no ROBOT enum.
