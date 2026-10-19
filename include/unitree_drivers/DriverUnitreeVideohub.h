@@ -48,8 +48,7 @@
  *          this class sends the same requests with a configurable service name.
  *          Tested on:
  *          - G1: service "videohub" on eth0, DDS domain 0, 1920x1080 JPEG frames of
- *            ~145 KB, ~16 ms per request, ~18 new frames per second (measured with
- *            unitree-g1's software/utils/videohub_test).
+ *            ~145 KB, ~16 ms per request, ~18 new frames per second.
  *          - H1: service "videohub" on eth0, DDS domain 0, with the stock
  *            unitree::robot::go2::VideoClient (sas_robot_driver_unitree_h1's camera
  *            node). The H1 head camera is mounted upside down: its frames must be
