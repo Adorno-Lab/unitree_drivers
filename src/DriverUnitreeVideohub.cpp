@@ -74,11 +74,48 @@ public:
 };
 
 /**
- * @brief Reads the resolution of a JPEG image from its SOFn marker, without decoding it.
+ * @brief Reads the resolution of a JPEG image from its header, without decoding it.
+ *
+ * @details Fills Frame::width and Frame::height. Reading the header takes microseconds,
+ *          whereas decoding a 1920x1080 frame takes milliseconds, and this class never
+ *          decodes the frames. This function is not part of unitree_sdk2 (videohub only
+ *          returns the bytes); it follows the JPEG standard, ITU-T T.81 (ISO/IEC 10918-1),
+ *          Annex B.
+ *
+ *          A JPEG file is a sequence of segments. Each one starts with a marker: the byte
+ *          0xFF followed by a byte that identifies the segment. Most segments then have a
+ *          2-byte big-endian length, which counts itself and the data but not the marker.
+ *          The markers used here:
+ *          - SOI (Start Of Image), 0xFF 0xD8: the first two bytes of every JPEG file. It
+ *            has no length. If the data does not start with it, it is not a JPEG image.
+ *          - SOFn (Start Of Frame, n = 0..15), 0xFF 0xC0 to 0xFF 0xCF: the frame header,
+ *            which holds the resolution. n is the coding process: SOF0 baseline (the usual
+ *            one), SOF1 extended, SOF2 progressive, SOF3 lossless, and so on. Three codes of
+ *            that range are not SOFn: 0xC4 (DHT, Define Huffman Table), 0xC8 (JPG, reserved),
+ *            and 0xCC (DAC, Define Arithmetic Coding conditioning).
+ *
+ *          The function starts after SOI and jumps from segment to segment with their
+ *          lengths (skipping e.g. APP0/JFIF, DQT, and DHT) until it finds a SOFn. The SOFn
+ *          always comes before the compressed image data (SOS), so the search never reaches
+ *          it. The layout of a SOFn segment, from the 0xFF of its marker at offset i:
+ *
+ *          | Offset   | Bytes | Content                           |
+ *          |----------|-------|-----------------------------------|
+ *          | i, i+1   | 2     | marker (0xFF 0xCn)                |
+ *          | i+2, i+3 | 2     | length of the segment             |
+ *          | i+4      | 1     | sample precision (bits, usually 8)|
+ *          | i+5, i+6 | 2     | height (number of lines)          |
+ *          | i+7, i+8 | 2     | width (samples per line)          |
+ *
+ * @note Fill bytes (extra 0xFF bytes before a marker, which the standard allows but
+ *       encoders rarely write) are not handled: the function then returns false, and the
+ *       frame is still delivered with width and height 0.
+ *
  * @param jpeg JPEG bytes.
  * @param width Output: width in pixels.
  * @param height Output: height in pixels.
- * @return True if the data starts with the JPEG SOI marker and a SOFn marker was found.
+ * @return True if the data starts with the SOI marker and a SOFn marker was found; width
+ *         and height are left unchanged otherwise.
  */
 bool jpeg_resolution(const std::vector<uint8_t>& jpeg, int& width, int& height)
 {
