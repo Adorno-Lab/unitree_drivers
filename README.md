@@ -69,7 +69,8 @@ find_package(unitree_drivers REQUIRED)
 target_link_libraries(${YOUR_LIBRARY} PRIVATE
      unitree_drivers::loco_client
      unitree_drivers::arm_sdk
-     unitree_drivers::low_state)
+     unitree_drivers::low_state
+     unitree_drivers::videohub)
 ```
 
 
@@ -77,6 +78,7 @@ target_link_libraries(${YOUR_LIBRARY} PRIVATE
 #include <unitree_drivers/DriverUnitreeLocoClient.h>
 #include <unitree_drivers/DriverUnitreeArmSDK.h>
 #include <unitree_drivers/DriverUnitreeLowState.h>
+#include <unitree_drivers/DriverUnitreeVideohub.h>
 ```
 
 `DriverUnitreeArmSDK` drives the arms and waist through the `rt/arm_sdk` topic with a ramped blend weight, and supports both the G1 and the H1. Pick the robot at construction:
@@ -117,6 +119,34 @@ h1_arms.set_gains(Arm::LIMB::WAIST, {300}, {5});   // Yaw
 ```
 > [!WARNING]
 > xr_teleoperate sends these gains to the H1 on `rt/lowcmd`, not `rt/arm_sdk`. Unitree's only `rt/arm_sdk` reference for the H1 is the 60 / 1.5 example.
+
+## Head camera (videohub)
+
+`DriverUnitreeVideohub` reads the head camera through Unitree's `videohub` RPC service, the one the Unitree app uses.
+videohub owns the camera device (on the G1, `videohub_pc4` keeps `/dev/video4` open), so this reads the camera without
+stopping Unitree's services. It works on the G1 and the H1 (same service, domain 0, `eth0`).
+
+A background thread requests a frame every `request_period` seconds and skips the duplicates (videohub answers with its
+latest frame). Each new frame is passed to a callback, and the last one is also available with `get_latest_frame()`.
+The frames are the JPEG bytes as videohub sends them: decoding, scaling, and rotating are left to the caller. The H1
+camera is mounted upside down, so its frames must be rotated by 180 degrees.
+
+```cpp
+unitree::robot::ChannelFactory::Instance()->Init(0, "eth0");
+
+DriverUnitreeVideohub camera(shutdown_signaler);   // service "videohub", 30 requests/s, 1 s timeout
+camera.set_frame_callback([](const std::shared_ptr<const DriverUnitreeVideohub::Frame>& frame)
+{
+    // frame->jpeg (bytes), frame->width x frame->height, frame->sequence
+});
+camera.connect();
+camera.initialize();
+
+const auto statistics = camera.get_statistics();   // requests, failures, duplicates, new frames
+```
+
+The callback runs on the capture thread: it must not call `deinitialize()` or `disconnect()`. The library depends only
+on `unitree_sdk2` and `sas_core`, not on OpenCV.
 
 # Intended use in SAS driver classes
 
