@@ -48,7 +48,7 @@ public:
     static constexpr const char* API_VERSION = "1.0.0.0";
     static constexpr int32_t API_ID_GET_IMAGE_SAMPLE = 1001;
 
-    /// @param service_name Name of the RPC service (requests go to rt/api/<service_name>/request).
+    /// @param service_name Name of the RPC service (requests go to `rt/api/<service_name>/request`).
     explicit VideohubClient(const std::string& service_name)
         : unitree::robot::Client(service_name, false)
     {

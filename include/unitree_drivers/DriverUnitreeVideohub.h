@@ -134,7 +134,7 @@ public:
 
     /**
      * @param shutdown_signaler Shared shutdown coordinator, polled by the capture thread.
-     * @param service_name Name of the RPC service (requests go to rt/api/<service_name>/request).
+     * @param service_name Name of the RPC service (requests go to `rt/api/<service_name>/request`).
      * @param request_period Period of the requests, in seconds. The default, 1/30 s,
      *        polls faster than the ~18 new frames per second of the G1 camera, so no
      *        frame is missed; the extra requests return duplicates.
