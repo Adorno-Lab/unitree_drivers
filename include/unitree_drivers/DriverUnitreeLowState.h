@@ -17,7 +17,7 @@
 # ################################################################
 #
 #   Author: - Juan Jose Quiroz Omana (email: juanjose.quirozomana@manchester.ac.uk)
-#           - Documented with the assistance of Claude (Anthropic).
+#           - Documented with the assistance of Copilot (Microsoft).
 #
 # ################################################################
 */
@@ -74,8 +74,8 @@
  *          the actual H1 hardware and firmware you're targeting before trusting
  *          ROBOT::H1 readings from this class; if it turns out wrong for your unit,
  *          swap the ROBOT::H1 case in the .cpp to unitree_hg::msg::dds_::LowState_
- *          instead -- and note that doing so would also flip get_state_of_charge()'s
- *          availability (see its own warning below).
+ *          instead -- and note that doing so would also make get_state_of_charge()
+ *          unavailable for ROBOT::H1 (see its own warning below).
  *
  * @warning The topic name for ROBOT::H1 is a second, independent source of
  *          uncertainty on top of the message-type ambiguity above: this class
@@ -86,10 +86,11 @@
  *          name, and verify it alongside the message-type question above.
  *
  * @note Unlike DriverUnitreeLocoClient and DriverUnitreeArmSDK, this class has no
- *       background control loop: it only ever reads rt/lowstate, so there is nothing
- *       for it to publish or ramp down. The latest received message is cached and
- *       parsed on demand by the getters below, entirely on whichever thread the
- *       Unitree SDK invokes the DDS subscription callback on. shutdown_signaler is
+ *       background control loop: it only reads rt/lowstate (and, for ROBOT::G1, the
+ *       battery topic rt/lf/bmsstate), so there is nothing for it to publish or ramp
+ *       down. The latest received message is cached and parsed on demand by the
+ *       getters below, entirely on whichever thread the Unitree SDK invokes the DDS
+ *       subscription callback on. shutdown_signaler is
  *       still accepted and validated at construction for interface consistency with
  *       the other sub-drivers DriverUnitreeG1 aggregates (so it can be constructed
  *       and forwarded the same way), but it currently drives no behavior here.
@@ -189,9 +190,11 @@
  *         motor_state()[i].temperature() directly from a driver of your own instead
  *         of going through this method.
  *
- * @note Battery state of charge (get_state_of_charge()): only available for
- *       ROBOT::H1. See that method's own warning for why G1 cannot support it from
- *       rt/lowstate at all.
+ * @note Battery state of charge (get_state_of_charge()): the G1 LowState_
+ *       (unitree_hg) has no battery field, so for ROBOT::G1 connect() also
+ *       subscribes to rt/lf/bmsstate (unitree_hg::msg::dds_::BmsState_, about 20 Hz;
+ *       the topic is not in unitree_sdk2, it was checked on a G1). For ROBOT::H1 it
+ *       is read from the bms_state() field of rt/lowstate (unitree_go).
  */
 class DriverUnitreeLowState
 {
@@ -249,7 +252,7 @@ public:
     ~DriverUnitreeLowState();
 
     /**
-     * @brief Subscribes to rt/lowstate.
+     * @brief Subscribes to rt/lowstate and, for ROBOT::G1, to the battery topic rt/lf/bmsstate.
      * @pre unitree::robot::ChannelFactory::Instance()->Init(domain_id, network_interface)
      *      must already have been called by the owning driver.
      */
@@ -268,7 +271,8 @@ public:
     /// control loop or publisher to ramp down (see the class-level note).
     void deinitialize();
 
-    /// Unsubscribes from rt/lowstate. Calls deinitialize() first if still initialized.
+    /// Unsubscribes from rt/lowstate (and rt/lf/bmsstate for ROBOT::G1). Calls deinitialize() first if still
+    /// initialized.
     void disconnect();
 
     /// Number of joint slots in the underlying rt/lowstate message for this robot
@@ -304,24 +308,19 @@ public:
 
     /**
      * @brief Returns the battery's last reported state of charge.
-     * @details Only ROBOT::H1 carries a battery-management-system reading in
-     *          rt/lowstate: unitree_go::msg::dds_::LowState_ has a bms_state() field
-     *          (BmsState_::soc(), 0-100). unitree_hg::msg::dds_::LowState_ -- this
-     *          class's ROBOT::G1 message type -- declares no bms_state_ field at all
-     *          (verified directly against unitreerobotics/unitree_sdk2's own
-     *          include/unitree/idl/hg/LowState_.hpp), so there is no state-of-charge
-     *          reading obtainable from rt/lowstate for G1 in the first place -- this
-     *          isn't a gap in this class, it's absent from the message itself. If
-     *          your G1 exposes battery state on some other topic, reading it is out
-     *          of scope for this class, which only ever reads rt/lowstate.
+     * @details ROBOT::G1: BmsState_::soc() of rt/lf/bmsstate
+     *          (unitree_hg::msg::dds_::BmsState_), since the G1 LowState_ has no
+     *          battery field. ROBOT::H1: BmsState_::soc() of the bms_state() field of
+     *          rt/lowstate (unitree_go::msg::dds_::LowState_).
      * @warning If the ROBOT::H1 message-type mapping in the class-level warning
      *          above ever needs to flip to unitree_hg::msg::dds_::LowState_ for your
-     *          hardware/firmware, this method would stop working for ROBOT::H1 too,
-     *          for the same reason it doesn't work for ROBOT::G1 today.
+     *          hardware/firmware, this method would stop working for ROBOT::H1, since
+     *          that message has no bms_state_ field (the H1 would then need the
+     *          battery topic of the G1).
      * @return State of charge as a percentage in [0, 100].
-     * @throws std::runtime_error if no rt/lowstate message has been received yet, or
-     *         if robot_type_ is ROBOT::G1 (no bms_state_ field available -- see
-     *         above).
+     * @throws std::runtime_error if no battery message (ROBOT::G1) or no rt/lowstate
+     *         message (ROBOT::H1) has been received yet, or if the active ROBOT::H1
+     *         message type has no bms_state_ field.
      */
     double get_state_of_charge() const;
 

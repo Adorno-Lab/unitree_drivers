@@ -17,7 +17,7 @@
 # ################################################################
 #
 #   Author: - Juan Jose Quiroz Omana (email: juanjose.quirozomana@manchester.ac.uk)
-#           - Documented with the assistance of Claude (Anthropic).
+#           - Documented with the assistance of Copilot (Microsoft).
 #
 #   Acknowledgement: The H1 support in this class is based on the developments by
 #                    Daniel S. J. Derwent (email: daniel.derwent@manchester.ac.uk)

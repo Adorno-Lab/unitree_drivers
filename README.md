@@ -120,6 +120,19 @@ h1_arms.set_gains(Arm::LIMB::WAIST, {300}, {5});   // Yaw
 > [!WARNING]
 > xr_teleoperate sends these gains to the H1 on `rt/lowcmd`, not `rt/arm_sdk`. Unitree's only `rt/arm_sdk` reference for the H1 is the 60 / 1.5 example.
 
+## Battery
+
+`DriverUnitreeLowState::get_state_of_charge()` returns the battery level (%). On the G1, `rt/lowstate` has no battery
+field, so `connect()` also subscribes to `rt/lf/bmsstate` (`unitree_hg::msg::dds_::BmsState_`, about 20 Hz). On the
+H1, the level comes from `rt/lowstate`.
+
+```cpp
+DriverUnitreeLowState low_state(shutdown_signaler, DriverUnitreeLowState::ROBOT::G1);
+low_state.connect();
+low_state.initialize();
+const double soc = low_state.get_state_of_charge();   // throws until the first battery message arrives
+```
+
 ## Head camera (videohub)
 
 `DriverUnitreeVideohub` reads the head camera through Unitree's `videohub` RPC service, the one the Unitree app uses.
