@@ -17,7 +17,7 @@
 # ################################################################
 #
 #   Author: - Juan Jose Quiroz Omana (email: juanjose.quirozomana@manchester.ac.uk)
-#           - Documented with the assistance of Claude (Anthropic).
+#           - Documented with the assistance of Copilot (Microsoft).
 #
 # ################################################################
 */
