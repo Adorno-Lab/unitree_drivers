@@ -25,6 +25,7 @@
 #include <unitree_drivers/DriverUnitreeLowState.h>
 
 #include <unitree/idl/hg/LowState_.hpp>
+#include <unitree/idl/hg/BmsState_.hpp>
 #include <unitree/idl/go2/LowState_.hpp>
 #include <unitree/robot/channel/channel_subscriber.hpp>
 
@@ -50,6 +51,10 @@ static const std::string kTopicLowStateG1 = "rt/lowstate";
 // unitree_hg::msg::dds_::LowState_), it would likely need to change to
 // kTopicLowStateG1 instead.
 static const std::string kTopicLowStateH1 = "rt/lf/lowstate";
+
+// G1 battery (unitree_hg::msg::dds_::BmsState_): the G1 LowState_ has no battery field, so the battery comes in its
+// own message, on this topic at about 20 Hz. The topic is not in unitree_sdk2; it was checked on a G1 (27 Oct 2026).
+static const std::string kTopicBmsStateG1 = "rt/lf/bmsstate";
 
 namespace
 {
@@ -179,6 +184,13 @@ public:
     bool has_received_state_ = false;
     mutable std::mutex low_state_mutex_;
 
+    // G1 only: the battery, on its own topic (see kTopicBmsStateG1). It has its own mutex, so that reading it does not
+    // wait for the much faster rt/lowstate callback.
+    unitree::robot::ChannelSubscriberPtr<unitree_hg::msg::dds_::BmsState_> bms_state_subscriber_;
+    unitree_hg::msg::dds_::BmsState_ latest_bms_state_;
+    bool has_received_bms_state_ = false;
+    mutable std::mutex bms_state_mutex_;
+
     std::atomic<bool> is_connected_{false};
     std::atomic<bool> is_initialized_{false};
 
@@ -205,6 +217,18 @@ public:
         std::scoped_lock lock(low_state_mutex_);
         latest_low_state_ = *static_cast<const LowStateT*>(msg);
         has_received_state_ = true;
+    }
+
+    /**
+     * @brief DDS subscription callback of the G1 battery: copies the received message into latest_bms_state_.
+     * @param msg Raw message pointer handed to us by the Unitree SDK, pointing to a
+     *        unitree_hg::msg::dds_::BmsState_.
+     */
+    void bms_state_callback(const void* msg)
+    {
+        std::scoped_lock lock(bms_state_mutex_);
+        latest_bms_state_ = *static_cast<const unitree_hg::msg::dds_::BmsState_*>(msg);
+        has_received_bms_state_ = true;
     }
 
     /**
@@ -276,7 +300,8 @@ DriverUnitreeLowState::~DriverUnitreeLowState()
 
 /**
  * @brief Subscribes to the rt/lowstate-equivalent topic with the message type
- *        matching robot_type_.
+ *        matching robot_type_, and, for ROBOT::G1, to the battery topic
+ *        (kTopicBmsStateG1).
  * @throws std::invalid_argument if robot_type_ doesn't match any known enumerator.
  *         This branch is currently unreachable given ROBOT's two enumerators (G1,
  *         H1) are both handled below, but it guards against a future ROBOT
@@ -304,6 +329,12 @@ void DriverUnitreeLowState::connect()
                       std::placeholders::_1),
             1);
         impl_->lowstate_subscriber_ = subscriber;
+
+        // The battery of the G1 is not in rt/lowstate (see kTopicBmsStateG1).
+        impl_->bms_state_subscriber_.reset(
+            new unitree::robot::ChannelSubscriber<unitree_hg::msg::dds_::BmsState_>(kTopicBmsStateG1));
+        impl_->bms_state_subscriber_->InitChannel(
+            std::bind(&Impl::bms_state_callback, impl_.get(), std::placeholders::_1), 1);
         break;
     }
     case ROBOT::H1:
@@ -348,10 +379,10 @@ void DriverUnitreeLowState::deinitialize()
 }
 
 /**
- * @brief Unsubscribes from rt/lowstate.
+ * @brief Unsubscribes from rt/lowstate (and the battery topic for ROBOT::G1).
  * @details No-op if not currently connected. Calls deinitialize() first if still
  *          initialized, then releases the active subscriber (whichever alternative
- *          of the variant is populated) via std::visit.
+ *          of the variant is populated) via std::visit, and the battery subscriber.
  */
 void DriverUnitreeLowState::disconnect()
 {
@@ -360,6 +391,7 @@ void DriverUnitreeLowState::disconnect()
             deinitialize();
         }
         std::visit([](auto& subscriber) { subscriber.reset(); }, impl_->lowstate_subscriber_);
+        impl_->bms_state_subscriber_.reset();
         impl_->is_connected_ = false;
     }
 }
@@ -507,21 +539,26 @@ DriverUnitreeLowState::IMUData DriverUnitreeLowState::get_imu_data() const
 
 /**
  * @brief Returns the battery's last reported state of charge.
- * @details Only unitree_go::msg::dds_::LowState_ (ROBOT::H1) carries a bms_state()
- *          field; unitree_hg::msg::dds_::LowState_ (ROBOT::G1) has none at all (see
- *          the header's note on battery state of charge and this method's own
- *          warning). std::visit dispatches on the active alternative of
- *          latest_low_state_ rather than switching on robot_type_ directly, so this
- *          stays correct even if the ROBOT-to-message-type mapping in connect() is
- *          ever changed (see the class-level warning on the H1 message-set
- *          ambiguity).
+ * @details ROBOT::G1: from the BmsState_ of kTopicBmsStateG1, since unitree_hg::msg::dds_::LowState_ has no battery
+ *          field. ROBOT::H1: from the bms_state() field of unitree_go::msg::dds_::LowState_. For the H1, std::visit
+ *          dispatches on the active alternative of latest_low_state_ rather than switching on robot_type_ directly,
+ *          so this stays correct even if the ROBOT-to-message-type mapping in connect() is ever changed (see the
+ *          class-level warning on the H1 message-set ambiguity).
  * @return State of charge as a percentage in [0, 100].
- * @throws std::runtime_error if no rt/lowstate message has been received yet, or if
- *         the active message type has no bms_state_ field (unitree_hg -- i.e.
- *         ROBOT::G1 under the current mapping).
+ * @throws std::runtime_error if no battery message (G1) or no rt/lowstate message (H1) has been received yet, or if
+ *         the active H1 message type has no bms_state_ field (unitree_hg).
  */
 double DriverUnitreeLowState::get_state_of_charge() const
 {
+    if (robot_type_ == ROBOT::G1) {
+        std::scoped_lock lock(impl_->bms_state_mutex_);
+        if (!impl_->has_received_bms_state_) {
+            throw std::runtime_error("DriverUnitreeLowState::get_state_of_charge: no " + kTopicBmsStateG1
+                                     + " message received yet");
+        }
+        return static_cast<double>(impl_->latest_bms_state_.soc());
+    }
+
     std::scoped_lock lock(impl_->low_state_mutex_);
     if (!impl_->has_received_state_) {
         throw std::runtime_error("DriverUnitreeLowState::get_state_of_charge: no rt/lowstate message received yet");
@@ -540,8 +577,8 @@ double DriverUnitreeLowState::get_state_of_charge() const
     if (!supported) {
         throw std::runtime_error(
             "DriverUnitreeLowState::get_state_of_charge: not available for this robot type -- "
-            "the active rt/lowstate message (unitree_hg, i.e. ROBOT::G1 under the current mapping) "
-            "declares no bms_state_ field; see the class-level @note on battery state of charge");
+            "the active rt/lowstate message (unitree_hg) declares no bms_state_ field; see the class-level "
+            "@note on battery state of charge");
     }
     return soc;
 }
