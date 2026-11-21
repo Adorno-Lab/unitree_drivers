@@ -1,0 +1,61 @@
+# Builds the libraries with the unit tests (tests/) and runs them.
+#
+# The tests use DDS on the loopback interface only, so no robot is needed. The
+# job runs in the base image of the robot images (ROS 2 Jazzy and SAS), and
+# installs the Unitree SDK2 and sas_cpp as the robot images do.
+name: Unit tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: murilomarinho/sas:jazzy
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git libgtest-dev libeigen3-dev libdqrobotics
+
+      - uses: actions/checkout@v7
+
+      - name: Install the Unitree SDK2
+        run: |
+          git clone --depth 1 --recursive https://github.com/unitreerobotics/unitree_sdk2.git /tmp/unitree_sdk2
+          cmake -S /tmp/unitree_sdk2 -B /tmp/unitree_sdk2/build \
+                -DCMAKE_INSTALL_PREFIX=/opt/unitree_robotics -DBUILD_EXAMPLES=OFF
+          cmake --build /tmp/unitree_sdk2/build -j$(nproc)
+          cmake --install /tmp/unitree_sdk2/build
+          echo "/opt/unitree_robotics/lib" > /etc/ld.so.conf.d/unitree_robotics.conf
+          ldconfig
+
+      - name: Install sas_cpp
+        run: |
+          git clone --depth 1 https://github.com/MarinhoLab/sas_cpp.git /tmp/sas_cpp
+          cmake -S /tmp/sas_cpp -B /tmp/sas_cpp/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+          cmake --build /tmp/sas_cpp/build -j$(nproc)
+          cmake --install /tmp/sas_cpp/build
+          ldconfig
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_PREFIX_PATH=/opt/unitree_robotics -DUNITREE_DRIVERS_BUILD_TESTS=ON
+          cmake --build build -j$(nproc)
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure

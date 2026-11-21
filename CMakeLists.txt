@@ -59,6 +59,16 @@ include(cmake/low_cmd.cmake)
 include(cmake/videohub.cmake)
 
 # ---------------------------------------------------------------------------
+# Unit tests (tests/), off by default. They need GoogleTest, and use DDS on the
+# loopback interface only, so no robot is needed.
+# ---------------------------------------------------------------------------
+option(UNITREE_DRIVERS_BUILD_TESTS "Build the unit tests (requires GoogleTest)" OFF)
+if(UNITREE_DRIVERS_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# ---------------------------------------------------------------------------
 # Install: headers, libraries, and the exported CMake package
 # ---------------------------------------------------------------------------
 install(DIRECTORY include/
