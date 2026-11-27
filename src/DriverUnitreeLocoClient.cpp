@@ -518,7 +518,6 @@ void DriverUnitreeLocoClient::set_target_high_level_velocities(const std::array<
  */
 void DriverUnitreeLocoClient::enable_odometry() const
 {
-    impl_->with_client([&](auto& client) { client.EnableOdom(); });
     switch (robot_type_) {
     case ROBOT::G1:
         throw std::runtime_error("enable_odometry is not supported on G1");
@@ -536,7 +535,6 @@ void DriverUnitreeLocoClient::enable_odometry() const
  */
 void DriverUnitreeLocoClient::disable_odometry() const
 {
-    impl_->with_client([&](auto& client) { client.EnableOdom(); });
     switch (robot_type_) {
     case ROBOT::G1:
         throw std::runtime_error("disable_odometry is not supported on G1");
