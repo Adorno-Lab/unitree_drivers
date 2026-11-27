@@ -109,7 +109,6 @@ public:
     double get_swing_height()         const;
     double get_stand_height()         const;
     std::vector<double> get_phase()   const;
-    std::vector<double> get_odometry()   const;
 
     // Setters
     void set_fsm_id(const int& fsm_id);
