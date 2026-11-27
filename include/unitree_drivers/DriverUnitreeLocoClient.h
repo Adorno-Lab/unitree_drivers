@@ -117,4 +117,6 @@ public:
     void set_stand_height(const double& stand_height);
     void set_speed_mode(const int& mode);
     void set_target_high_level_velocities(const std::array<double,3>& target_high_level_velocities);
+    void enable_odometry() const;
+    void disable_odometry() const;
 };
