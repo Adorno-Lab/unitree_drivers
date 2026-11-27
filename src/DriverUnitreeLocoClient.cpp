@@ -508,3 +508,43 @@ void DriverUnitreeLocoClient::set_target_high_level_velocities(const std::array<
     std::scoped_lock lock(impl_->data_mutex_);
     impl_->target_high_level_velocities_ = target_high_level_velocities;
 }
+
+/**
+ * @brief Enables the odometry service. This allows the robot to start publishing its
+ *        high level velocities and position estimates on rt/odommodestate. Position
+ *        estimates are given with respect to the robot's pose when this function is
+ *        called. The odometry service is not enabled by default, this function must
+ *        be called to start it.
+ */
+void DriverUnitreeLocoClient::enable_odometry() const
+{
+    impl_->with_client([&](auto& client) { client.EnableOdom(); });
+    switch (robot_type_) {
+    case ROBOT::G1:
+        throw std::runtime_error("enable_odometry is not supported on G1");
+    case ROBOT::H1:
+        std::get<std::unique_ptr<unitree::robot::h1::LocoClient>>(
+            impl_->loco_client_)->EnableOdom();
+        break;
+    default:
+        throw std::invalid_argument("DriverUnitreeLocoClient::enable_odometry: unknown RobotType");
+    }
+}
+
+/**
+ * @brief Disables the odometry service.
+ */
+void DriverUnitreeLocoClient::disable_odometry() const
+{
+    impl_->with_client([&](auto& client) { client.EnableOdom(); });
+    switch (robot_type_) {
+    case ROBOT::G1:
+        throw std::runtime_error("disable_odometry is not supported on G1");
+    case ROBOT::H1:
+        std::get<std::unique_ptr<unitree::robot::h1::LocoClient>>(
+            impl_->loco_client_)->DisableOdom();
+        break;
+    default:
+        throw std::invalid_argument("DriverUnitreeLocoClient::disable_odometry: unknown RobotType");
+    }
+}

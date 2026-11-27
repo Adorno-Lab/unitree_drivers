@@ -109,6 +109,7 @@ public:
     double get_swing_height()         const;
     double get_stand_height()         const;
     std::vector<double> get_phase()   const;
+    std::vector<double> get_odometry()   const;
 
     // Setters
     void set_fsm_id(const int& fsm_id);
@@ -117,4 +118,6 @@ public:
     void set_stand_height(const double& stand_height);
     void set_speed_mode(const int& mode);
     void set_target_high_level_velocities(const std::array<double,3>& target_high_level_velocities);
+    void enable_odometry() const;
+    void disable_odometry() const;
 };
